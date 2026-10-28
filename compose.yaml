@@ -1,0 +1,52 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    image: leo-postgres-pgvector:16
+    container_name: leo_pgvector
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: leo_db
+      POSTGRES_USER: leo_user
+      POSTGRES_PASSWORD: leo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leo_user -d leo_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leo_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: development
+      APP_SECRET_KEY: dev-secret-key-at-least-32-chars-long
+      ADMIN_API_KEY: dev-admin-secret-key
+      DATABASE_URL: postgresql+asyncpg://leo_user:leo_password@db:5432/leo_db
+      LLM_PROVIDER: mock
+      EMBEDDINGS_PROVIDER: mock
+      APP_LOG_LEVEL: INFO
+    volumes:
+      - ./app:/app/app:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pgdata:
+    driver: local

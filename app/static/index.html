@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LEO — Bitmax Group AI Call Agent Operations Dashboard</title>
+  <meta name="description"
+    content="Production-oriented AI Call Center Operations Dashboard for LEO, Bitmax Group AI Call Agent.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/dashboard/styles.css">
+</head>
+
+<body class="dark-theme">
+  <!-- Incoming Call Modal Overlay -->
+  <div id="incoming-modal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+    aria-labelledby="modal-caller-name">
+    <div class="incoming-card">
+      <div class="radar-pulse-ring">
+        <div class="phone-ring-icon">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+            </path>
+          </svg>
+        </div>
+      </div>
+      <div class="incoming-info">
+        <span class="badge-incoming">INCOMING ENTERPRISE CALL</span>
+        <h2 id="modal-caller-name">Acme Corp - IT Director</h2>
+        <p id="modal-caller-phone" class="phone-masked">+1 (555) ***-8291</p>
+        <p id="modal-call-id" class="id-tag">CALL ID: CR-4821</p>
+        <div class="auto-answer-countdown">
+          <span>Auto-answering in: <strong id="modal-countdown">3s</strong></span>
+          <div class="countdown-bar">
+            <div id="modal-progress" class="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-modal-reject" class="btn btn-danger" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          Decline
+        </button>
+        <button id="btn-modal-answer" class="btn btn-success btn-pulse" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+            </path>
+          </svg>
+          Answer Call
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transcript Inspection Drawer Modal -->
+  <div id="drawer-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="drawer-card">
+      <div class="drawer-header">
+        <div>
+          <h3 id="drawer-title">Call Transcript Inspection</h3>
+          <p id="drawer-subtitle" class="muted-text">Session ID & Timing</p>
+        </div>
+        <button id="btn-close-drawer" class="btn-icon" aria-label="Close Drawer">&times;</button>
+      </div>
+      <div id="drawer-body" class="drawer-body">
+        <!-- Rendered turns -->
+      </div>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <!-- Top Navigation Bar -->
+    <header class="top-header">
+      <div class="header-brand">
+        <div class="logo-shield">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"></path>
+            <path d="M12 8v8M8 12h8"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">LEO AI Call Center Operations</h1>
+          <p class="header-subtitle">Bitmax Group AI Voice Agent • Production Gateway</p>
+        </div>
+      </div>
+
+      <div class="header-badges">
+        <div class="status-indicator-pill" id="system-health-pill" title="Live status probe from /health/live">
+          <span class="status-dot green"></span>
+          <span>System: <strong id="health-label">Online</strong></span>
+        </div>
+        <div class="status-indicator-pill" id="telephony-status-pill" title="Hardware bridge status">
+          <span class="status-dot amber"></span>
+          <span>Telephony: <strong id="telephony-label">REST Active (Audio Sim)</strong></span>
+        </div>
+        <div class="status-indicator-pill" id="concurrency-pill" title="Concurrency monitor">
+          <span class="status-dot blue"></span>
+          <span>Sessions: <strong id="concurrency-label">0 / 25</strong></span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="simulate-controls">
+          <label for="delay-select" class="sr-only">Auto-Answer Delay</label>
+          <select id="delay-select" class="select-input" title="Auto-answer delay">
+            <option value="3">Auto-Answer (3s)</option>
+            <option value="5">Auto-Answer (5s)</option>
+            <option value="0">Manual Answer</option>
+          </select>
+          <button id="btn-simulate-call" class="btn btn-primary" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+              </path>
+            </svg>
+            Simulate Incoming Call
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Boundary Notification Banner -->
+    <aside class="notice-banner" role="complementary">
+      <div class="notice-content">
+        <span class="notice-tag">SYSTEM INTEGRATION BOUNDARY</span>
+        <span class="notice-text">LEO AI Brain connects directly to live Bitmax RAG backend (<code
+            id="provider-name">REST /api/v1/chat</code>). Real-time telephony trunk and PSTN transfers are simulated in
+          this interface. Credentials are never exposed to browser.</span>
+      </div>
+      <div class="notice-live-status">
+        <span id="sse-indicator" class="sse-pill connecting">SSE Connecting...</span>
+      </div>
+    </aside>
+
+    <!-- Metrics Stat Bar -->
+    <section class="metrics-bar" aria-label="Call Center Key Performance Indicators">
+      <div class="metric-card">
+        <div class="metric-meta">TOTAL CALLS</div>
+        <div class="metric-value" id="stat-total">0</div>
+        <div class="metric-sub">Session history log</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-meta">ACTIVE SESSIONS</div>
+        <div class="metric-value highlight-blue" id="stat-active">0</div>
+        <div class="metric-sub">25 concurrency ceiling</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-meta">COMPLETED</div>
+        <div class="metric-value highlight-green" id="stat-completed">0</div>
+        <div class="metric-sub">Closed sessions</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-meta">AI-HANDLED RATE</div>
+        <div class="metric-value highlight-cyan" id="stat-ai-rate">100%</div>
+        <div class="metric-sub">Resolved without escalation</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-meta">HUMAN ESCALATIONS</div>
+        <div class="metric-value highlight-amber" id="stat-escalated">0</div>
+        <div class="metric-sub">Handoff queue triggers</div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Grid -->
+    <main class="workspace-grid">
+      <!-- Left Column: Active Call Sessions (25 Concurrency Manager) -->
+      <section class="panel session-queue-panel" aria-labelledby="queue-heading">
+        <div class="panel-header">
+          <div class="header-left">
+            <h2 id="queue-heading" class="panel-title">Active Calls</h2>
+            <span class="count-badge" id="queue-count-badge">0</span>
+          </div>
+          <span class="helper-tag">25 MAX</span>
+        </div>
+        <div id="session-list" class="session-list" role="tablist" aria-label="Active Call Sessions">
+          <div class="empty-state" id="empty-queue-state">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+              </path>
+            </svg>
+            <p>No active calls currently</p>
+            <small>Click <strong>Simulate Incoming Call</strong> above to initiate a realistic call session.</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center Column: Live Call Monitor & Conversation Stream -->
+      <section class="panel monitor-panel" aria-labelledby="monitor-heading">
+        <div class="panel-header live-banner-header">
+          <div class="active-caller-summary">
+            <div class="call-avatar" id="monitor-avatar">
+              <span>CR</span>
+            </div>
+            <div>
+              <div class="caller-headline">
+                <h2 id="monitor-heading" class="caller-name">No Call Selected</h2>
+                <span id="monitor-status-pill" class="status-pill idle">IDLE</span>
+                <span id="monitor-escalation-pill" class="status-pill warning hidden">ESCALATED</span>
+              </div>
+              <div class="caller-details">
+                <span id="monitor-caller-id">ID: --</span> •
+                <span id="monitor-caller-phone">+1 (***) ***-****</span> •
+                <span id="monitor-timer">00:00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="monitor-controls" id="call-controls">
+            <button id="btn-mute" class="btn btn-secondary btn-sm" disabled title="Mute LEO Microphone">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+              <span id="mute-label">Mute</span>
+            </button>
+            <button id="btn-escalate-quick" class="btn btn-warning btn-sm" disabled
+              title="Escalate to Human Specialist">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 3 21 3 21 8"></polyline>
+                <line x1="4" y1="20" x2="21" y2="3"></line>
+                <polyline points="21 16 21 21 16 21"></polyline>
+                <line x1="15" y1="15" x2="21" y2="21"></line>
+                <line x1="4" y1="4" x2="9" y2="9"></line>
+              </svg>
+              Escalate
+            </button>
+            <button id="btn-hangup" class="btn btn-danger btn-sm" disabled title="Terminate Call Session">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                  d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91">
+                </path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+              End Call
+            </button>
+          </div>
+        </div>
+
+        <!-- Waveform & Acoustic Activity Visualizer -->
+        <div class="audio-visualization-card">
+          <div class="waveform-header">
+            <div class="audio-status-tag">
+              <span class="waveform-indicator" id="waveform-indicator"></span>
+              <span id="acoustic-status-label">Voice Activity: Monitoring Carrier</span>
+            </div>
+            <div class="codec-tag">Bitmax AI Brain • pgvector Grounding</div>
+          </div>
+          <canvas id="waveform-canvas" width="600" height="42"></canvas>
+        </div>
+
+        <!-- Live Transcript Stream -->
+        <div id="transcript-stream" class="transcript-stream" role="log" aria-live="polite">
+          <div class="empty-transcript" id="empty-transcript-message">
+            <p>Select or simulate an incoming call to observe real-time conversation.</p>
+          </div>
+        </div>
+
+        <!-- Customer Interaction & Prompt Injection Simulator -->
+        <div class="interaction-bar">
+          <div class="quick-prompts-row" id="quick-prompts">
+            <span class="quick-prompt-label">Quick Inquiries:</span>
+            <button class="chip"
+              data-text="What core enterprise cloud consulting services does Bitmax Group offer?">Cloud
+              Consulting</button>
+            <button class="chip"
+              data-text="What cybersecurity and governance capabilities are provided?">Cybersecurity</button>
+            <button class="chip"
+              data-text="आप कौन सी क्लाउड और आईटी सेवाएं प्रदान करते हैं?">🇮🇳 हिंदी: सेवाएं</button>
+            <button class="chip"
+              data-text="Aap kaunsi cloud services provide karte ho?">🇮🇳 Hinglish: Services</button>
+            <button class="chip" data-text="What are your service level agreements and support tiers?">SLA &
+              Support</button>
+            <button class="chip warning-chip" data-text="I need to speak with a human agent right now.">Request
+              Human</button>
+          </div>
+
+          <form id="customer-message-form" class="customer-input-form">
+            <label for="customer-input" class="sr-only">Customer Message</label>
+
+            <input type="text" id="customer-input" class="text-input" placeholder="Speak or type your inquiry (English, हिन्दी, Hinglish)..."
+              disabled autocomplete="off">
+
+            <select id="select-speech-lang" class="select-input" title="Voice Input Language" style="max-width: 125px; font-size: 0.8rem; padding: 0.4rem 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.12); color: #f8fafc; border-radius: 6px;">
+              <option value="auto">🌐 Auto (Auto)</option>
+              <option value="hi-IN">🇮🇳 Hindi (हिन्दी)</option>
+              <option value="en-IN" selected>🇬🇧 English</option>
+            </select>
+
+            <button type="button" id="btn-microphone" class="btn btn-secondary" title="Speak to LEO">
+              🎙️ Speak
+            </button>
+
+            <button type="submit" id="btn-send-message" class="btn btn-primary" disabled>
+              Send Customer Turn
+            </button>
+          </form>
+
+        </div>
+      </section>
+
+      <!-- Right Column: Human Handoff Queue & Agent Pool -->
+      <section class="panel handoff-panel" aria-labelledby="handoff-heading">
+        <div class="panel-header">
+          <div>
+            <h2 id="handoff-heading" class="panel-title">Human Escalation</h2>
+            <p class="panel-sub">Simulated Tier-2 Operator Queue</p>
+          </div>
+          <span class="badge-status-simulated">SIMULATED ROUTING</span>
+        </div>
+
+        <!-- Active Call Escalation Details -->
+        <div class="escalation-status-card" id="escalation-card">
+          <div class="card-title">CURRENT CALL CONTEXT</div>
+          <div id="escalation-empty-notice" class="empty-context">
+            <p>Call currently handled by LEO AI. No escalation triggers active.</p>
+          </div>
+          <div id="escalation-details" class="escalation-details hidden">
+            <div class="escalation-reason-tag">
+              <span>Reason:</span>
+              <strong id="esc-reason-text">Customer Request</strong>
+            </div>
+            <p id="esc-notes-text" class="esc-notes">Customer explicitly requested a human specialist.</p>
+            <div class="assigned-agent-pill" id="assigned-agent-banner">
+              <span>Assigned:</span>
+              <strong id="assigned-agent-name">None</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Human Agent Queue -->
+        <div class="agent-queue-section">
+          <div class="section-title-row">
+            <span class="section-title">OPERATOR POOL</span>
+            <span class="count-tag" id="agent-online-count">3 Online</span>
+          </div>
+          <div id="agent-list" class="agent-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <div class="handoff-disclaimer">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <small>Handoff transfers are simulated within dashboard state. Actual telephony SIP/PSTN transfers require
+            external telephony provider bridge confirmation.</small>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Section: Call Center History & Searchable Audit Log -->
+    <section class="history-section" aria-labelledby="history-heading">
+      <div class="history-header">
+        <div>
+          <h2 id="history-heading" class="panel-title">Call History & Audit Log</h2>
+          <p class="panel-sub">Isolated demo session records with full transcript inspection</p>
+        </div>
+        <div class="history-search-bar">
+          <label for="history-search" class="sr-only">Search Calls</label>
+          <input type="search" id="history-search" class="search-input"
+            placeholder="Search by Caller, ID, Phone, or Transcript Keyword...">
+          <select id="history-filter-status" class="select-input">
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
+          </select>
+          <button id="btn-refresh-history" class="btn btn-secondary btn-sm" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="history-table" aria-label="Historical Calls Table">
+          <thead>
+            <tr>
+              <th scope="col">CALL ID</th>
+              <th scope="col">CALLER</th>
+              <th scope="col">PHONE (MASKED)</th>
+              <th scope="col">STATUS</th>
+              <th scope="col">DURATION</th>
+              <th scope="col">ESCALATED</th>
+              <th scope="col">STARTED</th>
+              <th scope="col">ACTION</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body">
+            <tr>
+              <td colspan="8" class="text-center py-4">Loading call history...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="/dashboard/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,66 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Secrets � NEVER commit these
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.lcov
+
+# Type checking
+.mypy_cache/
+
+# Linting
+.ruff_cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+*.tar
+
+# Logs
+logs/
+*.log
+
+# Knowledge data � raw content may be large or proprietary
+knowledge_data/raw/*
+knowledge_data/processed/*
+!knowledge_data/raw/.gitkeep
+!knowledge_data/processed/.gitkeep
+
+# Alembic
+# Keep migrations tracked; only ignore local override files
+migrations/versions/__pycache__/
+
+# Knowledge sources - company documents (may contain confidential or proprietary materials)
+knowledge_sources/*
+!knowledge_sources/.gitkeep
+!knowledge_sources/bitmax_group/.gitkeep
+

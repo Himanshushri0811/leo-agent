@@ -1,0 +1,22 @@
+url,page_title,page_type,access_date,review_status,notes
+https://www.bitmaxgroup.com/,Bitmax Technology PVT LTD,homepage,2026-10-17,reviewed,Services list; pricing plans; tech stack; group companies; footer contacts
+https://www.bitmaxgroup.com/about,Bitmax Technology PVT LTD,about,2026-10-17,reviewed,CONFLICT: Paris/London/Singapore history and named founder vs Noida contact; treat as unverified
+https://www.bitmaxgroup.com/portfolio,Bitmax Technology PVT LTD,portfolio,2026-10-17,reviewed,2 case studies; 4 gallery titles; awards and testimonials unverified; links are placeholders
+https://www.bitmaxgroup.com/contact,Bitmax Technology PVT LTD,contact,2026-10-17,reviewed,Phones; emails; Noida address; hours; form; 24/7 claims conflict with hours
+https://www.bitmaxgroup.com/services/web-development,Bitmax Technology PVT LTD,service,2026-10-17,reviewed,6 capabilities; 3 success stories; FAQ answers did not render
+https://www.bitmaxgroup.com/services/app-development,Bitmax Technology PVT LTD,service,2026-10-17,reviewed,Native and cross-platform; 2 case studies; compliance badges unverified
+https://www.bitmaxgroup.com/services/ui-ux-design,Bitmax Technology PVT LTD,service,2026-10-17,reviewed,Design capabilities; 2 case studies; aggregate stats unverified
+https://www.bitmaxgroup.com/services/crm-&-billing-software,Bitmax Technology PVT LTD,service,2026-10-17,reviewed,Features; FAQ answers published; demo figures look like sample data
+https://www.bitmaxgroup.com/privacy,,legal,2026-10-17,inaccessible,HTTP 404 though linked in footer
+https://www.bitmaxgroup.com/terms,,legal,2026-10-17,inaccessible,HTTP 404 though linked in footer
+https://www.bitmaxgroup.com/sitemap,,sitemap,2026-10-17,inaccessible,HTTP 404 though linked in footer
+https://www.bitmaxgroup.com/sitemap.xml,,crawl file,2026-10-17,not retrievable,Fetch tool only opens URLs already seen in results
+https://www.bitmaxgroup.com/robots.txt,,crawl file,2026-10-17,not retrievable,Fetch tool only opens URLs already seen in results
+https://bitmax.com,,external (group company link),,not visited,Linked from homepage under BITMAX TECHNOLOGY; relationship not verified
+https://www.instagram.com/bitm.axtechnology/,,social,,not visited,Footer link
+https://www.facebook.com/people/BitMax-Technology/61575784970024/,,social,,not visited,Footer link
+https://x.com/BitmaxInfo,,social,,not visited,Footer link
+https://linkedin.com/company/bitmax-technology,,social,,not visited,Footer link
+(login page),,restricted,,skipped,Login required by design; URL not exposed
+(Terms/Privacy/Refund footer links),,legal,2026-10-17,placeholder,Point to homepage
+(five services without URLs),,service,,not discovered,Website Maintenance; Digital Marketing; E-commerce; Cloud Services; 3D Art & Video

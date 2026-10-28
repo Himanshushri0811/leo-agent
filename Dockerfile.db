@@ -1,0 +1,17 @@
+# =============================================================================
+# PostgreSQL 16 + pgvector Dockerfile
+# Based on official postgres:16 image (verified working on Docker Desktop WSL2)
+# =============================================================================
+FROM postgres:16
+
+LABEL maintainer="LEO AI Team"
+LABEL description="PostgreSQL 16 with pgvector extension based on official postgres:16"
+
+# Install postgresql-16-pgvector from pre-configured official PostgreSQL APT repository
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        postgresql-16-pgvector \
+    && rm -rf /var/lib/apt/lists/*
+
+# Ensure vector extension is enabled on initial database creation
+RUN echo "CREATE EXTENSION IF NOT EXISTS vector;" > /docker-entrypoint-initdb.d/01_init_pgvector.sql

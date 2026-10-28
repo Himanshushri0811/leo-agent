@@ -1,0 +1,204 @@
+"""
+Conversation orchestrator.
+
+Coordinates: retrieval ? prompt assembly ? LLM generation ? response.
+
+The orchestrator is deliberately independent of HTTP request objects.
+It accepts plain Python data and returns plain Python data.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import uuid
+from dataclasses import dataclass, field
+
+from app.ai.interfaces import EmbeddingsProvider, GenerationRequest, LLMProvider, Message
+from app.ai.prompts.system import build_system_prompt
+from app.core.config import Settings
+from app.core.logging import get_logger
+from app.knowledge.retrieval import RetrievalResult, retrieve_relevant_chunks
+
+logger = get_logger(__name__)
+
+MAX_HISTORY_TURNS = 6  # Keep last N user+assistant pairs to bound context size
+
+
+@dataclass
+class ChatRequest:
+    session_id: str
+    user_message: str
+    conversation_history: list[Message] = field(default_factory=list)
+
+
+@dataclass
+class SourceReference:
+    chunk_id: str
+    source_name: str
+    source_url: str | None
+    similarity_score: float
+    content_excerpt: str
+
+
+import time
+
+@dataclass
+class ChatResponse:
+    session_id: str
+    response_text: str
+    sources: list[SourceReference]
+    model: str
+    provider: str
+    prompt_tokens: int
+    completion_tokens: int
+    prompt_version: str
+    retrieval_duration_ms: float | None = None
+    llm_duration_ms: float | None = None
+    ttft_ms: float | None = None
+    total_duration_ms: float | None = None
+
+
+async def run_chat(
+    request: ChatRequest,
+    llm: LLMProvider,
+    embeddings: EmbeddingsProvider,
+    settings: Settings,
+) -> ChatResponse:
+    """
+    End-to-end RAG chat pipeline:
+
+    1. Embed the user query.
+    2. Retrieve relevant approved knowledge chunks.
+    3. Assemble system prompt with retrieved passages.
+    4. Build message history (bounded).
+    5. Call LLM provider (measures TTFT via streaming if supported).
+    6. Return structured response with source attribution.
+    """
+    t_chat_start = time.perf_counter()
+    request_id = str(uuid.uuid4())
+    logger.info(
+        "chat_request_received",
+        session_id=request.session_id,
+        request_id=request_id,
+        # Message content is not logged to protect user privacy
+        message_length=len(request.user_message),
+    )
+
+    # 1. Retrieve relevant knowledge
+    t_retrieval_start = time.perf_counter()
+    retrieval_results: list[RetrievalResult] = await retrieve_relevant_chunks(
+        query=request.user_message,
+        embeddings_provider=embeddings,
+        settings=settings,
+    )
+    retrieval_duration_ms = (time.perf_counter() - t_retrieval_start) * 1000.0
+
+    # 2. Format passages for the system prompt
+    passages = _format_passages(retrieval_results)
+
+    # 3. Build messages
+    system_prompt = build_system_prompt(passages)
+    history = _trim_history(request.conversation_history)
+
+    messages: list[Message] = [
+        Message(role="system", content=system_prompt),
+        *history,
+        Message(role="user", content=request.user_message),
+    ]
+
+    # 4. Generate
+    gen_request = GenerationRequest(
+        messages=messages,
+        max_tokens=settings.llm_max_tokens,
+        temperature=settings.llm_temperature,
+    )
+
+    t_gen_start = time.perf_counter()
+    ttft_ms: float | None = None
+
+    # Try streaming to capture TTFT and stream output if provider supports it
+    if hasattr(llm, "generate_stream"):
+        try:
+            chunks: list[str] = []
+            async for chunk in llm.generate_stream(gen_request):
+                if ttft_ms is None:
+                    ttft_ms = (time.perf_counter() - t_gen_start) * 1000.0
+                chunks.append(chunk)
+
+            if chunks:
+                full_content = "".join(chunks)
+                gen_response = GenerationResponse(
+                    content=full_content,
+                    model=getattr(llm, "_model", getattr(gen_request, "model", "default")),
+                    prompt_tokens=0,
+                    completion_tokens=len(full_content.split()),
+                    finish_reason="stop",
+                    provider=getattr(llm, "provider_name", "unknown"),
+                )
+            else:
+                gen_response = await llm.generate(gen_request)
+        except Exception:
+            gen_response = await llm.generate(gen_request)
+    else:
+        gen_response = await llm.generate(gen_request)
+
+    llm_duration_ms = (time.perf_counter() - t_gen_start) * 1000.0
+    total_duration_ms = (time.perf_counter() - t_chat_start) * 1000.0
+
+    logger.info(
+        "timing_rag_pipeline",
+        session_id=request.session_id,
+        request_id=request_id,
+        provider=gen_response.provider,
+        model=gen_response.model,
+        retrieval_duration_ms=round(retrieval_duration_ms, 2),
+        ttft_ms=round(ttft_ms, 2) if ttft_ms is not None else None,
+        llm_duration_ms=round(llm_duration_ms, 2),
+        total_duration_ms=round(total_duration_ms, 2),
+        sources_count=len(retrieval_results),
+    )
+
+    sources = [
+        SourceReference(
+            chunk_id=str(r.chunk_id),
+            source_name=r.source_name,
+            source_url=r.source_url,
+            similarity_score=r.similarity_score,
+            content_excerpt=r.content[:200],
+        )
+        for r in retrieval_results
+    ]
+
+    from app.ai.prompts.system import SYSTEM_PROMPT_VERSION
+
+    return ChatResponse(
+        session_id=request.session_id,
+        response_text=gen_response.content,
+        sources=sources,
+        model=gen_response.model,
+        provider=gen_response.provider,
+        prompt_tokens=gen_response.prompt_tokens,
+        completion_tokens=gen_response.completion_tokens,
+        prompt_version=SYSTEM_PROMPT_VERSION,
+        retrieval_duration_ms=round(retrieval_duration_ms, 2),
+        llm_duration_ms=round(llm_duration_ms, 2),
+        ttft_ms=round(ttft_ms, 2) if ttft_ms is not None else None,
+        total_duration_ms=round(total_duration_ms, 2),
+    )
+
+
+def _format_passages(results: list[RetrievalResult]) -> str:
+    if not results:
+        return ""
+    parts: list[str] = []
+    for i, r in enumerate(results, start=1):
+        ref = r.source_url or r.source_name
+        parts.append(f"[{i}] (Source: {ref})\n{r.content}")
+    return "\n\n".join(parts)
+
+
+def _trim_history(history: list[Message]) -> list[Message]:
+    """Keep only the most recent N turns to bound context size."""
+    # Each turn = 1 user + 1 assistant message
+    max_messages = MAX_HISTORY_TURNS * 2
+    return history[-max_messages:] if len(history) > max_messages else history
