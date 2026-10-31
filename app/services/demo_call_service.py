@@ -713,8 +713,8 @@ class DemoCallService:
                 )
             else:
                 greeting_text = (
-                    "Thank you for calling Bitmax Group. My name is LEO, your AI enterprise assistant. "
-                    "How may I assist you today?"
+                    "Hello! Welcome to Bitmax Group. I'm LEO, your AI assistant. "
+                    "How can I help you today?"
                 )
 
             greeting_turn = TranscriptTurn(
@@ -893,7 +893,7 @@ class DemoCallService:
             ack_turn = TranscriptTurn(
                 id=f"turn_{uuid.uuid4().hex[:8]}",
                 role=SpeakerRole.LEO,
-                text="I understand you would like to speak with a human specialist. I am routing your call to our Tier-2 specialist queue now.",
+                text="Of course. I can't connect calls directly, but you can reach the Bitmax team through their official channels for a direct conversation.",
                 timestamp=datetime.now(UTC),
             )
             await self._record_transcript_turn(call, ack_turn)

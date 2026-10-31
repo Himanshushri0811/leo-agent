@@ -13,7 +13,7 @@ def test_build_system_prompt_injects_passages() -> None:
     prompt = build_system_prompt(passages)
     assert passages in prompt
     assert "You are LEO" in prompt
-    assert "BEGIN KNOWLEDGE PASSAGES" in prompt
+    assert "<<<BEGIN_REFERENCE_DATA>>>" in prompt
 
 
 def test_build_system_prompt_handles_empty_passages() -> None:

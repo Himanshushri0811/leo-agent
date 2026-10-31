@@ -96,5 +96,7 @@ def test_key_policy_sentences_present(needle):
 
 
 def test_language_scope_matches_requirements():
-    # English, Hindi, Hinglish only. Other languages are intentionally not promised.
-    assert "Tamil" not in build_system_prompt("")
+    # Complete 7-language support: English, Hindi, Hinglish, Tamil, Telugu, Kannada, Malayalam
+    prompt = build_system_prompt("")
+    for lang in ["English", "Hindi", "Hinglish", "Tamil", "Telugu", "Kannada", "Malayalam"]:
+        assert lang in prompt
