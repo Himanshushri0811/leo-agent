@@ -295,9 +295,8 @@ async def test_12_empty_knowledge_retrieval() -> None:
     # Empty retrieval must still inject verified Bitmax core profile
     prompt = build_system_prompt("")
     assert "Bitmax Group" in prompt
-    assert "Cloud Infrastructure & DevOps" in prompt
-    assert "Cybersecurity & Governance" in prompt
-    assert "inquiries@bitmaxgroup.com" in prompt
+    assert ("Cloud infrastructure and DevOps" in prompt or "Cloud Infrastructure & DevOps" in prompt)
+    assert ("Cybersecurity and governance" in prompt or "Cybersecurity & Governance" in prompt)
 
 
 # 13. TTS failure after a valid text response

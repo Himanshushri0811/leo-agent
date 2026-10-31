@@ -130,16 +130,13 @@ class GeminiLLMProvider:
         self._timeout_seconds = settings.llm_timeout_seconds
         self._max_retries = max(1, settings.llm_max_retries)
 
-        # Allocate per-request HTTP timeout so retries fit within the total deadline
-        if self._max_retries > 1:
-            per_request_timeout = max(
-                5.0, min(float(self._timeout_seconds) / (self._max_retries - 1), 15.0)
-            )
-        else:
-            per_request_timeout = float(self._timeout_seconds)
-
-        # google-genai HttpOptions.timeout expects milliseconds (int)
-        self._client_timeout_ms = int(per_request_timeout * 1000)
+        # google-genai HttpOptions.timeout expects milliseconds (int).
+        # The client-level timeout must be at least as large as the full request deadline;
+        # generate() and generate_stream() each supply their own per-call http_options
+        # (also 30 s) so the SDK uses the per-call value.  A shorter client-level cap
+        # was previously computed as timeout/(retries-1) = 30/1 = 15 s, which the SDK
+        # enforced as the effective HTTP timeout and caused every ~15 s request to fail.
+        self._client_timeout_ms = int(float(self._timeout_seconds) * 1000)
 
         self._client = genai.Client(
             api_key=self._api_key,
@@ -187,6 +184,7 @@ class GeminiLLMProvider:
             if request.temperature is not None
             else self._temperature,
             stop_sequences=request.stop_sequences or None,
+            http_options=types.HttpOptions(timeout=int(self._timeout_seconds * 1000)),
         )
 
         @retry(
@@ -315,33 +313,47 @@ class GeminiLLMProvider:
         )
 
     async def generate_stream(self, request: GenerationRequest) -> AsyncIterator[str]:
-        """Stream generated text chunks asynchronously using Gemini streaming API."""
+        """Stream Gemini output with a timeout on each awaited provider chunk."""
         t_start = time.perf_counter()
         system_instruction, contents = self._prepare_contents(request)
 
         config = types.GenerateContentConfig(
             system_instruction=system_instruction,
             max_output_tokens=request.max_tokens or self._max_tokens,
-            temperature=request.temperature
-            if request.temperature is not None
-            else self._temperature,
+            temperature=(
+                request.temperature if request.temperature is not None else self._temperature
+            ),
             stop_sequences=request.stop_sequences or None,
+            http_options=types.HttpOptions(timeout=int(self._timeout_seconds * 1000)),
         )
 
         ttft_ms: float | None = None
+
         try:
-            async with asyncio.timeout(self._timeout_seconds):
-                stream_res = self._client.aio.models.generate_content_stream(
-                    model=self._model,
-                    contents=contents,
-                    config=config,
-                )
-                stream = await stream_res if inspect.isawaitable(stream_res) else stream_res
-                async for chunk in stream:
-                    if chunk.text:
-                        if ttft_ms is None:
-                            ttft_ms = (time.perf_counter() - t_start) * 1000.0
-                        yield chunk.text
+            stream_res = self._client.aio.models.generate_content_stream(
+                model=self._model,
+                contents=contents,
+                config=config,
+            )
+
+            stream = await stream_res if inspect.isawaitable(stream_res) else stream_res
+
+            iterator = stream.__aiter__()
+
+            while True:
+                try:
+                    # Only provider waiting time is subject to this timeout.
+                    # Consumer processing between yielded chunks is excluded.
+                    async with asyncio.timeout(self._timeout_seconds):
+                        chunk = await anext(iterator)
+                except StopAsyncIteration:
+                    break
+
+                if chunk.text:
+                    if ttft_ms is None:
+                        ttft_ms = (time.perf_counter() - t_start) * 1000.0
+
+                    yield chunk.text
 
             dur_ms = (time.perf_counter() - t_start) * 1000.0
             logger.info(
@@ -350,6 +362,7 @@ class GeminiLLMProvider:
                 ttft_ms=round(ttft_ms, 2) if ttft_ms is not None else None,
                 duration_ms=round(dur_ms, 2),
             )
+
         except (asyncio.TimeoutError, TimeoutError) as exc:
             dur_ms = (time.perf_counter() - t_start) * 1000.0
             logger.warning(
@@ -363,6 +376,7 @@ class GeminiLLMProvider:
             raise ProviderTimeoutError(
                 f"Gemini streaming timed out after {self._timeout_seconds}s"
             ) from exc
+
         except httpx.TimeoutException as exc:
             dur_ms = (time.perf_counter() - t_start) * 1000.0
             clean_err = _sanitize_error_message(str(exc))
@@ -377,14 +391,13 @@ class GeminiLLMProvider:
             raise ProviderTimeoutError(
                 f"Gemini streaming connection timed out: {clean_err}"
             ) from exc
+
         except errors.APIError as exc:
             dur_ms = (time.perf_counter() - t_start) * 1000.0
             clean_err = _sanitize_error_message(str(exc))
-            category = (
-                "provider_timeout"
-                if (exc.code in (408, 504) or "DEADLINE_EXCEEDED" in clean_err)
-                else f"http_{exc.code}"
-            )
+            is_timeout = exc.code in (408, 504) or "DEADLINE_EXCEEDED" in clean_err
+            category = "provider_timeout" if is_timeout else f"http_{exc.code}"
+
             logger.warning(
                 "gemini_streaming_failed",
                 provider=self.provider_name,
@@ -393,11 +406,14 @@ class GeminiLLMProvider:
                 failure_category=category,
                 error_detail=clean_err[:150],
             )
-            if exc.code in (408, 504) or "DEADLINE_EXCEEDED" in clean_err:
+
+            if is_timeout:
                 raise ProviderTimeoutError(
                     f"Gemini streaming provider timeout (HTTP {exc.code}): {clean_err}"
                 ) from exc
+
             raise ProviderError(f"Gemini streaming error (HTTP {exc.code}): {clean_err}") from exc
+
         except Exception as exc:
             dur_ms = (time.perf_counter() - t_start) * 1000.0
             clean_err = _sanitize_error_message(str(exc))
@@ -437,17 +453,19 @@ class GeminiEmbeddingsProvider:
             raise ValueError("GEMINI_API_KEY is not configured.")
 
         self._api_key = settings.gemini_api_key.get_secret_value()
-        self._model = "text-embedding-004"
+        self._model = "gemini-embedding-2"
         self._dimensions = settings.embeddings_dimensions
 
-        # Verify dimensionality compatibility with current pgvector schema (1536)
-        if self._dimensions > 768:
-            logger.warning(
-                "gemini_embedding_dimension_mismatch",
-                configured_dimension=self._dimensions,
-                gemini_native_max=768,
-                detail="Gemini text-embedding-004 supports up to 768 dimensions. If connecting to a Vector(1536) column, ensure vector dimensions match before indexing.",
+        if self._dimensions != 1536:
+            raise ValueError(
+                "Gemini embeddings must use 1536 dimensions "
+                "to match the current PostgreSQL Vector(1536) schema."
             )
+
+        self._client = genai.Client(
+            api_key=self._api_key,
+            http_options=types.HttpOptions(timeout=60000),
+        )
 
         # google-genai HttpOptions.timeout expects milliseconds (int)
         self._client = genai.Client(
@@ -466,7 +484,7 @@ class GeminiEmbeddingsProvider:
 
         # Batch embed with Gemini embed_content
         embeddings: list[list[float]] = []
-        dim = min(self._dimensions, 768)
+        dim = self._dimensions
 
         for text in request.texts:
             try:
@@ -479,12 +497,29 @@ class GeminiEmbeddingsProvider:
                     contents=text,
                     config=config,
                 )
-                if res.embedding and res.embedding.values:
-                    vec = list(res.embedding.values)
-                    # If existing database schema strictly expects 1536 dimensions, zero-pad safely
-                    if self._dimensions > len(vec):
-                        vec = vec + [0.0] * (self._dimensions - len(vec))
+                emb_obj = None
+                res_embeddings = getattr(res, "embeddings", None)
+                if isinstance(res_embeddings, (list, tuple)) and res_embeddings:
+                    emb_obj = res_embeddings[0]
+                elif getattr(getattr(res, "embedding", None), "values", None) is not None:
+                    emb_obj = res.embedding
+                elif res_embeddings and hasattr(res_embeddings, "__getitem__"):
+                    try:
+                        emb_obj = res_embeddings[0]
+                    except (IndexError, TypeError):
+                        emb_obj = None
+
+                if emb_obj and getattr(emb_obj, "values", None) is not None:
+                    vec = list(emb_obj.values)
+
+                    if len(vec) != self._dimensions:
+                        raise ProviderError(
+                            f"Gemini returned {len(vec)} dimensions; expected {self._dimensions}."
+                        )
+
                     embeddings.append(vec)
+                else:
+                    raise ProviderError("Gemini embedding response contained no embedding values.")
             except Exception as exc:
                 clean_err = _sanitize_error_message(str(exc))
                 raise ProviderError(f"Gemini embedding failed: {clean_err}") from exc
@@ -503,6 +538,6 @@ class GeminiEmbeddingsProvider:
                 contents="test",
                 config=types.EmbedContentConfig(output_dimensionality=64),
             )
-            return bool(res.embedding)
+            return bool(getattr(res, "embeddings", None) or getattr(res, "embedding", None))
         except Exception:
             return False

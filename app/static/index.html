@@ -13,9 +13,105 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="/dashboard/styles.css">
+  <link rel="stylesheet" href="/dashboard/voice-mode.css">
 </head>
 
 <body class="dark-theme">
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       VOICE MODE OVERLAY — Siri-Style Continuous Conversation Interface
+       ══════════════════════════════════════════════════════════════════ -->
+  <div id="voice-mode-overlay" role="dialog" aria-modal="true" aria-label="LEO Voice Mode">
+
+    <!-- Top bar -->
+    <div class="vm-top-bar">
+      <div class="vm-brand">
+        <div class="vm-brand-dot"></div>
+        LEO Voice Mode
+      </div>
+      <button id="vm-close-btn" class="vm-close-btn" type="button" aria-label="End Voice Session">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        End Session
+      </button>
+    </div>
+
+    <!-- Center content -->
+    <div class="vm-center">
+
+      <!-- Permission prompt (shown before mic is granted) -->
+      <div class="vm-permission-prompt" id="vm-permission-prompt">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#7dd3fc" stroke-width="1.5">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+        <h3>Microphone Permission Required</h3>
+        <p>LEO needs microphone access to start continuous voice conversation. Click below to allow access in your browser.</p>
+        <button id="vm-grant-mic-btn" type="button">Allow Microphone</button>
+      </div>
+
+      <!-- Main orb + UI (hidden while permission prompt is showing) -->
+      <div id="vm-main-ui" style="display:flex; flex-direction:column; align-items:center; gap:32px; width:100%;">
+
+        <!-- Animated Orb -->
+        <div class="vm-orb-container" aria-hidden="true">
+          <div class="vm-orb-ring"></div>
+          <div class="vm-orb-ring"></div>
+          <div class="vm-orb-ring"></div>
+          <div class="vm-orb" id="vm-orb">
+            <div class="vm-orb-bars" id="vm-orb-bars">
+              <div class="vm-orb-bar"></div>
+              <div class="vm-orb-bar"></div>
+              <div class="vm-orb-bar"></div>
+              <div class="vm-orb-bar"></div>
+              <div class="vm-orb-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- State label -->
+        <div class="vm-status-area">
+          <div class="vm-state-label" id="vm-state-label">Ready</div>
+          <div class="vm-state-subtitle" id="vm-state-subtitle">Activate voice mode to begin</div>
+        </div>
+
+        <!-- Live transcript bubbles -->
+        <div class="vm-transcript-area" id="vm-transcript-area" role="log" aria-live="polite"></div>
+
+        <!-- Language selector -->
+        <div class="vm-lang-bar">
+          <label for="vm-lang-select">Language:</label>
+          <select id="vm-lang-select" class="vm-lang-select" title="Voice recognition language">
+            <option value="auto">🌐 Auto-detect</option>
+            <option value="en-IN" selected>🇮🇳 English (India)</option>
+            <option value="hi-IN">🇮🇳 हिन्दी</option>
+            <option value="ta-IN">🇮🇳 தமிழ்</option>
+            <option value="te-IN">🇮🇳 తెలుగు</option>
+            <option value="kn-IN">🇮🇳 ಕನ್ನಡ</option>
+            <option value="ml-IN">🇮🇳 മലയാളം</option>
+          </select>
+        </div>
+
+      </div><!-- /vm-main-ui -->
+    </div><!-- /vm-center -->
+
+    <!-- Bottom bar with retry button -->
+    <div class="vm-bottom-bar">
+      <button id="vm-retry-btn" class="vm-retry-btn" type="button">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Retry
+      </button>
+    </div>
+
+  </div><!-- /voice-mode-overlay -->
+
   <!-- Incoming Call Modal Overlay -->
   <div id="incoming-modal" class="modal-overlay hidden" role="dialog" aria-modal="true"
     aria-labelledby="modal-caller-name">
@@ -302,6 +398,16 @@
               🎙️ Speak
             </button>
 
+            <button type="button" id="btn-voice-mode" class="btn-voice-mode" title="Start Siri-style continuous voice conversation">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+              Voice Mode
+            </button>
+
             <button type="submit" id="btn-send-message" class="btn btn-primary" disabled>
               Send Customer Turn
             </button>
@@ -408,6 +514,7 @@
   </div>
 
   <script src="/dashboard/app.js"></script>
+  <script src="/dashboard/voice-mode.js"></script>
 </body>
 
 </html>

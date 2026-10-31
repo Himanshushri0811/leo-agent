@@ -52,20 +52,24 @@ _SCRIPT_PATTERNS = {
 
 # High-frequency Hinglish marker words (romanized Hindi function words)
 _HINGLISH_MARKERS = {
-    "namaste", "kya", "kaise", "kaun", "kab", "kyun", "kahan", "kidhar", "kripya",
-    "aap", "hum", "mera", "meri", "mere", "apka", "aapka", "aapki", "aapke",
-    "chahiye", "hota", "hoga", "hogi", "hote", "hain", "hai", "tha", "thi", "the",
-    "kar", "karein", "karo", "karna", "karne", "dena", "dijiye", "bataiye", "batao",
-    "shukriya", "dhanyawad", "sahayata", "madad", "sakte", "sakti", "sakta", "sakenge",
-    "nahin", "nahi", "accha", "theek", "bahut", "thoda", "kuch", "sab", "yeh", "woh",
-    "mujhe", "tumhe", "apne", "baare", "mein", "par", "se", "ko", "aur", "ya", "lekin"
+    "namaste", "kya", "kaise", "kaun", "kaunsa", "kaunsi", "kaunse", "kab", "kyun",
+    "kahan", "kidhar", "kripya", "aap", "hum", "mera", "meri", "mere", "apka", "aapka",
+    "aapki", "aapke", "chahiye", "chahta", "chahti", "chahte", "hota", "hoti", "hote",
+    "hoga", "hogi", "hain", "hai", "tha", "thi", "the", "kar", "karta", "karti", "karte",
+    "karein", "karo", "karna", "karne", "kiya", "kiye", "dena", "dijiye", "bataiye",
+    "batao", "bataye", "batana", "shukriya", "dhanyawad", "sahayata", "madad", "sakte",
+    "sakti", "sakta", "sakenge", "nahin", "nahi", "accha", "theek", "bahut", "thoda",
+    "kuch", "sab", "yeh", "woh", "mujhe", "tumhe", "apne", "baare", "mein", "par",
+    "se", "si", "sa", "ko", "ka", "ki", "ke", "aur", "ya", "lekin", "bhi", "toh",
+    "kis", "kisko", "kiske", "kiski", "paas", "saath", "samajh"
 }
 
 # Common borrowed enterprise words that should NOT cause a language switch
 _BORROWED_TECHNICAL_TERMS = {
     "cloud", "security", "support", "services", "sla", "database", "incident",
     "devops", "backup", "architecture", "consulting", "server", "network",
-    "api", "login", "password", "agent", "ticket", "okay", "yes", "no", "thanks", "thank"
+    "api", "login", "password", "agent", "ticket", "okay", "yes", "no", "thanks", "thank",
+    "sure", "provide", "offer", "help"
 }
 
 
@@ -115,24 +119,37 @@ class LanguageDetector:
                 )
 
         # 2. Latin script text: check Hinglish vs English
-        words = [w.strip(".,!?:;\"'()[]{}").lower() for w in clean.split()]
+        # Normalize hyphens and slashes to spaces so compound tokens like 'kaun-kaun' split
+        normalized_clean = re.sub(r"[-/]", " ", clean)
+        words = [w.strip(".,!?:;\"'()[]{}").lower() for w in normalized_clean.split()]
         words = [w for w in words if w]
 
         hinglish_count = sum(1 for w in words if w in _HINGLISH_MARKERS)
         borrowed_count = sum(1 for w in words if w in _BORROWED_TECHNICAL_TERMS)
         total_words = len(words)
 
-        # If previous session language was Hindi/Hinglish and current input is short or pure loanwords
-        if session_language in (SupportedLanguage.HINDI, SupportedLanguage.HINGLISH):
-            if total_words <= 3 and (borrowed_count > 0 or hinglish_count > 0):
+        # If previous session language was a regional language or Hinglish and current input is short or pure loanwords/acknowledgments
+        if session_language is not None and session_language != SupportedLanguage.ENGLISH:
+            short_ack = {"ok", "okay", "yes", "yeah", "yep", "sure", "thanks", "thank", "theek", "accha", "ha", "haan"}
+            if total_words <= 3 and all(w in short_ack or w in _BORROWED_TECHNICAL_TERMS for w in words):
                 return LanguageDetectionResult(
                     detected_language=session_language,
                     locale_code=LANGUAGE_LOCALE_MAP[session_language],
                     confidence=0.85,
                     is_code_switched=True,
-                    script="latin",
-                    reason="session_continuity_loanwords",
+                    script="latin" if session_language == SupportedLanguage.HINGLISH else session_language.value,
+                    reason="session_continuity_acknowledgment",
                 )
+            if session_language in (SupportedLanguage.HINDI, SupportedLanguage.HINGLISH):
+                if total_words <= 3 and (borrowed_count > 0 or hinglish_count > 0):
+                    return LanguageDetectionResult(
+                        detected_language=session_language,
+                        locale_code=LANGUAGE_LOCALE_MAP[session_language],
+                        confidence=0.85,
+                        is_code_switched=True,
+                        script="latin",
+                        reason="session_continuity_loanwords",
+                    )
 
         # Hinglish detection: at least one marker word and meaningful fraction of sentence
         if hinglish_count >= 1:

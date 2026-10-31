@@ -44,6 +44,7 @@ class SourceReference:
 
 import time
 
+
 @dataclass
 class ChatResponse:
     session_id: str
@@ -88,11 +89,19 @@ async def run_chat(
 
     # 1. Retrieve relevant knowledge
     t_retrieval_start = time.perf_counter()
-    retrieval_results: list[RetrievalResult] = await retrieve_relevant_chunks(
-        query=request.user_message,
-        embeddings_provider=embeddings,
-        settings=settings,
-    )
+    try:
+        retrieval_results: list[RetrievalResult] = await retrieve_relevant_chunks(
+            query=request.user_message,
+            embeddings_provider=embeddings,
+            settings=settings,
+        )
+    except Exception as exc:
+        logger.warning(
+            "rag_retrieval_failed",
+            session_id=request.session_id,
+            error=str(exc)[:150],
+        )
+        retrieval_results = []
     retrieval_duration_ms = (time.perf_counter() - t_retrieval_start) * 1000.0
 
     # 2. Format passages for the system prompt
@@ -100,10 +109,20 @@ async def run_chat(
 
     # 3. Build messages
     system_prompt = build_system_prompt(passages)
+    lang_directive = _build_turn_language_directive(request.user_message)
     history = _trim_history(request.conversation_history)
 
+    # The caller may already include the current utterance in history.
+    # Keep it only once in the provider request.
+    if (
+        history
+        and history[-1].role == "user"
+        and history[-1].content.strip() == request.user_message.strip()
+    ):
+        history = history[:-1]
+
     messages: list[Message] = [
-        Message(role="system", content=system_prompt),
+        Message(role="system", content=system_prompt + lang_directive),
         *history,
         Message(role="user", content=request.user_message),
     ]
@@ -202,20 +221,38 @@ async def run_chat_streaming(
 
     # 1. Retrieve knowledge in parallel with prompt assembly
     t_retrieval_start = time.perf_counter()
-    retrieval_results: list[RetrievalResult] = await retrieve_relevant_chunks(
-        query=request.user_message,
-        embeddings_provider=embeddings,
-        settings=settings,
-    )
+    try:
+        retrieval_results: list[RetrievalResult] = await retrieve_relevant_chunks(
+            query=request.user_message,
+            embeddings_provider=embeddings,
+            settings=settings,
+        )
+    except Exception as exc:
+        logger.warning(
+            "rag_retrieval_failed",
+            session_id=request.session_id,
+            error=str(exc)[:150],
+        )
+        retrieval_results = []
     retrieval_duration_ms = (time.perf_counter() - t_retrieval_start) * 1000.0
 
     # 2. Build messages
     passages = _format_passages(retrieval_results)
     system_prompt = build_system_prompt(passages)
+    lang_directive = _build_turn_language_directive(request.user_message)
     history = _trim_history(request.conversation_history)
 
+    # The caller may already include the current utterance in history.
+    # Keep it only once in the provider request.
+    if (
+        history
+        and history[-1].role == "user"
+        and history[-1].content.strip() == request.user_message.strip()
+    ):
+        history = history[:-1]
+
     messages: list[Message] = [
-        Message(role="system", content=system_prompt),
+        Message(role="system", content=system_prompt + lang_directive),
         *history,
         Message(role="user", content=request.user_message),
     ]
@@ -254,41 +291,60 @@ async def run_chat_streaming(
                 yield remainder
 
         except Exception as exc:
-            category = "timeout" if "timeout" in str(exc).lower() or "deadline" in str(exc).lower() else "provider_error"
-            # Fall back to non-streaming ONLY if no response content has been committed to the client
+            err_msg = str(exc).lower()
+            is_gateway_timeout = "504" in err_msg or "gateway" in err_msg
+            is_deadline_timeout = (
+                "deadline" in err_msg
+                or "timed out" in err_msg
+                or isinstance(exc, (TimeoutError, asyncio.TimeoutError))
+            ) and not is_gateway_timeout
+
+            category = "timeout" if is_deadline_timeout else "provider_error"
+            logger.warning(
+                "llm_stream_failed",
+                session_id=request.session_id,
+                provider=getattr(llm, "provider_name", "unknown"),
+                model=getattr(llm, "_model", "unknown"),
+                failure_category=category,
+                tokens_yielded=tokens_yielded,
+                error=str(exc)[:200],
+                exc_type=type(exc).__name__,
+            )
             if tokens_yielded == 0:
-                logger.warning(
-                    "llm_stream_fallback",
-                    provider=getattr(llm, "provider_name", "gemini"),
-                    model=getattr(llm, "_model", "gemini"),
-                    failure_category=category,
-                    fallback_outcome="non_streaming_attempted",
-                    error=str(exc)[:150],
-                )
-                try:
-                    gen_response = await llm.generate(gen_request)
-                    full_text_parts = [gen_response.content]
-                    yield gen_response.content
-                except Exception as fb_exc:
-                    logger.error(
-                        "llm_stream_fallback_failed",
-                        provider=getattr(llm, "provider_name", "gemini"),
-                        model=getattr(llm, "_model", "gemini"),
-                        failure_category=category,
-                        fallback_outcome="recovery_message_returned",
-                        error=str(fb_exc)[:150],
-                    )
+                if category == "timeout":
+                    # Avoid spending a second full LLM deadline after a genuine timeout.
                     recovery_text = get_recovery_message(request.user_message)
                     full_text_parts = [recovery_text]
                     yield recovery_text
+                else:
+                    # Attempt non-streaming fallback for non-timeout provider errors.
+                    try:
+                        gen_response = await llm.generate(gen_request)
+                        response_text = (gen_response.content or "").strip()
+
+                        if response_text:
+                            full_text_parts = [response_text]
+                            yield response_text
+                        else:
+                            recovery_text = get_recovery_message(request.user_message)
+                            full_text_parts = [recovery_text]
+                            yield recovery_text
+
+                    except Exception as fallback_exc:
+                        logger.warning(
+                            "llm_non_streaming_fallback_failed",
+                            error=str(fallback_exc)[:150],
+                            failure_category=category,
+                        )
+                        recovery_text = get_recovery_message(request.user_message)
+                        full_text_parts = [recovery_text]
+                        yield recovery_text
             else:
-                # Part of the response was already sent; do not replay entire response from start
                 logger.warning(
-                    "llm_stream_interrupted_after_commit",
-                    tokens_yielded=tokens_yielded,
-                    failure_category=category,
-                    fallback_outcome="aborted_without_duplicate",
+                    "llm_stream_partial_failure",
                     error=str(exc)[:150],
+                    failure_category=category,
+                    fallback_outcome="partial_response_preserved",
                 )
     else:
         # Provider does not support streaming; return full response as single sentence
@@ -309,6 +365,11 @@ async def run_chat_streaming(
 
     llm_duration_ms = (time.perf_counter() - t_gen_start) * 1000.0
     total_duration_ms = (time.perf_counter() - t_chat_start) * 1000.0
+    # Never leave the user without a response if the stream is empty.
+    if tokens_yielded == 0 and not "".join(full_text_parts).strip():
+        recovery_text = get_recovery_message(request.user_message)
+        full_text_parts = [recovery_text]
+        yield recovery_text
     full_text = "".join(full_text_parts)
 
     logger.info(
@@ -372,15 +433,45 @@ def _trim_history(history: list[Message]) -> list[Message]:
     return history[-max_messages:] if len(history) > max_messages else history
 
 
+def _build_turn_language_directive(user_message: str) -> str:
+    """Explicit turn-level language enforcement so LLM formulates response in caller's language."""
+    from app.voice.language import LanguageDetector, SupportedLanguage
+
+    try:
+        det = LanguageDetector.detect_utterance(user_message)
+        lang = det.detected_language
+        directives = {
+            SupportedLanguage.HINDI: "\n\n[Turn Language Directive: Caller spoke Hindi. You MUST reply in natural Hindi using Devanagari script. Explain retrieved facts in Hindi. Do NOT respond in English.]",
+            SupportedLanguage.HINGLISH: "\n\n[Turn Language Directive: Caller spoke Hinglish. You MUST reply in natural conversational Hinglish using Roman script. Explain retrieved facts in Hinglish. Do NOT respond in pure English or pure Devanagari.]",
+            SupportedLanguage.TAMIL: "\n\n[Turn Language Directive: Caller spoke Tamil. You MUST reply in natural Tamil using native Tamil script (தமிழ்). Explain retrieved facts in Tamil. Do NOT respond in English.]",
+            SupportedLanguage.TELUGU: "\n\n[Turn Language Directive: Caller spoke Telugu. You MUST reply in natural Telugu using native Telugu script (తెలుగు). Explain retrieved facts in Telugu. Do NOT respond in English.]",
+            SupportedLanguage.KANNADA: "\n\n[Turn Language Directive: Caller spoke Kannada. You MUST reply in natural Kannada using native Kannada script (ಕನ್ನಡ). Explain retrieved facts in Kannada. Do NOT respond in English.]",
+            SupportedLanguage.MALAYALAM: "\n\n[Turn Language Directive: Caller spoke Malayalam. You MUST reply in natural Malayalam using native Malayalam script (മലയാളം). Explain retrieved facts in Malayalam. Do NOT respond in English.]",
+        }
+        return directives.get(lang, "")
+    except Exception:
+        return ""
+
+
 def get_recovery_message(user_message: str) -> str:
-    """Localized recovery message when LLM provider times out or fails."""
+    """Localized recovery message when LLM provider times out or fails across all 7 languages."""
     try:
         from app.voice.language import LanguageDetector, SupportedLanguage
+
         det = LanguageDetector.detect_utterance(user_message)
-        if det.detected_language == SupportedLanguage.HINDI:
+        lang = det.detected_language
+        if lang == SupportedLanguage.HINDI:
             return "माफ़ कीजिये, मुझे एक तकनीकी समस्या आ रही है। क्या आप कृपया अपना सवाल दोहरा सकते हैं?"
-        elif det.detected_language == SupportedLanguage.HINGLISH:
+        elif lang == SupportedLanguage.HINGLISH:
             return "Sorry, mujhe ek brief technical issue aa raha hai. Kya aap please apna question repeat kar sakte hain?"
+        elif lang == SupportedLanguage.TAMIL:
+            return "மன்னிக்கவும், எனக்கு ஒரு சிறிய தொழில்நுட்ப சிக்கல் ஏற்பட்டுள்ளது. உங்கள் கேள்வியை மீண்டும் கேட்க முடியுமா?"
+        elif lang == SupportedLanguage.TELUGU:
+            return "క్షమించండి, నాకు ఒక చిన్న సాంకేతిక సమస్య ఎదురవుతోంది. దయచేసి మీ ప్రశ్నను మళ్లీ అడగగలరా?"
+        elif lang == SupportedLanguage.KANNADA:
+            return "ಕ್ಷಮಿಸಿ, ನನಗೆ ಒಂದು ಸಣ್ಣ ತಾಂತ್ರಿಕ ಸಮಸ್ಯೆ ಎದುರಾಗಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಪುನರಾವರ್ತಿಸಬಹುದೇ?"
+        elif lang == SupportedLanguage.MALAYALAM:
+            return "ക്ഷമിക്കണം, എനിക്ക് ഒരു ചെറിയ സാങ്കേതിക പ്രശ്നം നേരിടുന്നു. ദയവായി നിങ്ങളുടെ ചോദ്യം ആവർത്തിക്കാമോ?"
     except Exception:
         pass
     return "I'm sorry, I'm having a brief technical issue. Could you please repeat your question?"

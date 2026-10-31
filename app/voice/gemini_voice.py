@@ -153,14 +153,18 @@ class GeminiTTSProvider:
     async def synthesize(self, request: SpeechSynthesisRequest) -> SpeechSynthesisResponse:
         t_tts_start = time.perf_counter()
         voice = request.voice_name or self._default_voice
-        lang = request.language_code or self._default_language
         config = self._build_tts_config(voice)
 
-        prompt = (
-            f"Generate speech for the supplied dialogue in a professional, "
-            f"warm, composed customer-support voice. "
-            f"Language: {lang}. The dialogue is:\n{request.text}"
-        )
+        dialogue = (request.text or "").strip()
+        if not dialogue:
+            silent_wav = _l16_to_wav(b"", sample_rate=24000)
+            return SpeechSynthesisResponse(
+                audio_data=silent_wav,
+                audio_format="audio/wav",
+                duration_seconds=0.0,
+                provider=self.provider_name,
+                sample_rate=24000,
+            )
 
         # Candidates to try: primary model first, followed by known fallback models
         candidates = [self._model] + [m for m in TTS_CANDIDATE_MODELS if m != self._model]
@@ -182,7 +186,7 @@ class GeminiTTSProvider:
                 async with asyncio.timeout(min(remaining, _TTS_ATTEMPT_CAP_S)):
                     response = await self._client.aio.models.generate_content(
                         model=model_name,
-                        contents=prompt,
+                        contents=dialogue,
                         config=config,
                     )
                 used_model = model_name
@@ -275,15 +279,14 @@ class GeminiTTSProvider:
         """
         voice = request.voice_name or self._default_voice
         config = self._build_tts_config(voice)
-        prompt = (
-            f"Generate speech for the supplied dialogue in a professional, "
-            f"warm customer-support voice. The dialogue is:\n{request.text}"
-        )
+        dialogue = (request.text or "").strip()
+        if not dialogue:
+            return
 
         try:
             stream_coro = self._client.aio.models.generate_content_stream(
                 model=self._model,
-                contents=prompt,
+                contents=dialogue,
                 config=config,
             )
             stream = await stream_coro if inspect.isawaitable(stream_coro) else stream_coro
@@ -330,15 +333,10 @@ class GeminiTTSProvider:
         )
 
         voice = request.voice_name or self._default_voice
-        lang = request.language_code or self._default_language
         config = self._build_tts_config(voice)
-        prompt = (
-            f"Generate speech for the supplied dialogue. "
-            f"Use a professional, warm, composed customer-support voice. "
-            f"Language: {lang}. "
-            f"The dialogue to speak is:\n"
-            f"{request.text}"
-        )
+        dialogue = (request.text or "").strip()
+        if not dialogue:
+            return
 
         candidates = [self._model] + [m for m in TTS_CANDIDATE_MODELS if m != self._model]
         sample_rate = 24000
@@ -358,7 +356,7 @@ class GeminiTTSProvider:
             try:
                 stream_coro = self._client.aio.models.generate_content_stream(
                     model=model_name,
-                    contents=prompt,
+                    contents=dialogue,
                     config=config,
                 )
                 stream = await stream_coro if inspect.isawaitable(stream_coro) else stream_coro

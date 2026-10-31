@@ -1296,6 +1296,16 @@
       try { state.currentAudioSource.stop(); } catch (_) { }
       state.currentAudioSource = null;
     }
+    // 4. Stop any active Voice Mode stream sources
+    const vmDeps = window.__LEO_VOICE_DEPS__;
+    if (vmDeps?._vmStreamSources?.length) {
+      vmDeps._vmStreamSources.forEach(s => { try { s.stop(); } catch (_) {} });
+      vmDeps._vmStreamSources = [];
+    }
+    if (vmDeps?._vmStreamReader) {
+      vmDeps._vmStreamReader.cancel();
+      vmDeps._vmStreamReader = null;
+    }
     state.currentPlayToken = null;
     state.audioActive = false;
     state.nextChunkPlayTime = 0;
@@ -1810,6 +1820,16 @@
     loadActiveSessions,
     loadHistory,
     cleanup: cleanupTimersAndConnections,
+  };
+
+  // Expose audio engine functions for Voice Mode module
+  window.__LEO_VOICE_DEPS__ = {
+    stopCurrentAudio,
+    getOrCreateAudioContext,
+    triggerAudioActivity,
+    // Slots filled by voice-mode.js for its own stream sources
+    _vmStreamSources: null,
+    _vmStreamReader:  null,
   };
 
   // Run on DOM Ready
