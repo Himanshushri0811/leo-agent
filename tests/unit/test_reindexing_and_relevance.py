@@ -82,7 +82,7 @@ async def test_reindex_success_updates_chunks(test_settings: Settings) -> None:
         id=uuid.uuid4(),
         source_id=mock_source.id,
         chunk_index=0,
-        content="Bitmax Group overview",
+        content="Global Projects overview",
         embedding=[0.0] * 1536,
     )
 

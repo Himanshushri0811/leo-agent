@@ -1,0 +1,299 @@
+GLOBAL PROJECTS
+Company Profile, Project Portfolio & Centre Operations
+Internal Reference for Management ReviewPrepared from the Global Projects company profile, project-specific SOWs and supporting operational documentsDocument status: For review and factual confirmation
+1. Purpose of this document
+This document brings together (a) the Global Projects company/service profile, (b) the project categories described in the company material, (c) the individual project briefs/SOWs currently available, and (d) the centre onboarding, operating and commercial framework. It is intended to be reviewed by management before the information is used in LEO or shared externally.
+Review note: The document reports what the supplied source files state. It does not independently verify the legal status of entities, client identity, project availability, commercial promises or enforceability of contract clauses. Where source files disagree, the conflict is shown for management decision rather than silently choosing one value.
+2. Company profile and positioning
+The supplied company profile describes Global Projects as a US/UK-based outsourcing company with more than four years of industry experience. It presents the business as providing technology-driven outsourcing solutions to businesses and centres, and identifies the following service areas:
+BPO and call-centre operations (inbound and outbound).
+KPO and LPO services.
+Backend support, including data entry, document preparation, record maintenance, virtual assistance and email support.
+Lead generation for B2B and B2C through telecalling, email marketing and CRM tools.
+Software and CRM-related projects, including web development, app development, CRM tools, billing software and custom solutions.
+The profile states that Global Projects works in collaboration with Bitmax Group in India since 2024 and that support can include software/tools, technical setup, staff-hiring assistance, training, project setup and operational support. The profile also refers to eligible centres being able to receive direct client sign-up.
+Management to confirm: Approve the exact legal identity, jurisdiction, licensing claims, group relationship, approved public description and the wording around “direct client sign-up”. The source profile uses several descriptions (US/UK-based, licensed in US/UK, Global Projects Associates and Bitmax Group collaboration); these should be reconciled against current corporate records and signed agreements.
+3. Services and project categories
+Service line
+What the company profile describes
+Typical work examples stated or implied by source
+Call Centre / BPO – Inbound
+Customers contact an organisation for help or information.
+Customer service, queries, account/service assistance and support.
+Call Centre / BPO – Outbound
+Agents contact customers for sales or follow-up.
+Outbound calling, sales/follow-ups and customer outreach.
+Backend Support
+Operational work supporting business records and workflows.
+Data entry, document preparation, record maintenance, virtual assistance and email support.
+Lead Generation
+Generating business leads for clients.
+B2B/B2C leads through telecalling, email marketing and CRM tools.
+Software / CRM Projects
+Software work tailored to client requirements.
+Web development, app development, CRM tools, billing software and custom solutions.
+KPO / LPO
+Knowledge-process and legal-process outsourcing categories are listed.
+The company profile names these categories but does not provide detailed individual SOWs for them in the reviewed material.
+4. Facilities and support described in the company profile
+Dialer setup and maintenance.
+CRM integration and lead-management tools.
+Software provided by the client or company, depending on the project.
+Staff-hiring assistance and in-house training.
+Daily monitoring and reporting systems.
+Project setup, tool access, training materials and technical assistance.
+Quality guidance, performance monitoring, reporting support and payout coordination are listed in the FAQ/profile text.
+These are general company-profile statements. The exact support package, ownership, service levels and responsibility must be confirmed separately for each project and agreement.
+5. Project portfolio – individual project documents
+The following project-specific files were found in the supplied material. These are separate project briefs/SOWs and should be treated as distinct opportunities, not merged into one generic telecom project.
+5.1 Telecom Chat Support – Romania
+Field
+Details stated in RO_567772_2026.pdf
+Project Code
+RO/567772/2026
+Client Code
+552662/RO
+Country / language
+Romania / English
+Channel / process
+Inbound live chat support for telecom customers.
+Operating model
+16×6; Saturday fixed weekly off; two shifts: 5:00 AM–1:30 PM and 2:00 PM–10:00 PM.
+Per-shift team
+18 Chat Agents + 1 QA + 1 Team Leader.
+Monthly payout per head
+Agent ₹68,000; QA ₹74,000; Team Leader ₹72,000.
+Agent profile
+English only; neutral accent preferred; good written communication; minimum typing speed 35 WPM.
+Go-live timeline
+Within 40 days; document lists documentation/agreement 5 days, infrastructure 10, recruitment/screening 10, training 10, mock chats/certification 5.
+Royalty / security
+8.5% monthly billing; refundable security deposit ₹7.60 lakh, as stated in this project document.
+Scope of work – Romania
+Handle inbound customer chats for telecom customers in Romania.
+Support SIM activation/deactivation, recharge and billing, network troubleshooting, data packages, device configuration, service upgrades/downgrades and complaint registration/escalation.
+Maintain customer satisfaction, telecom process compliance, data privacy/security, real-time chat documentation and KPI/quality benchmarks.
+Maintain 2–3 concurrent chats; target average response time ≤30 seconds, AHT 8–12 minutes, FCR ≥85%, CSAT ≥90%, schedule adherence ≥95%, attendance ≥96%, resolution accuracy ≥95% and escalation rate ≤5%.
+Quality score minimum 90%; quality checks cover greeting, verification, product/process knowledge, communication, resolution, empathy, documentation and closing.
+Infrastructure includes per-agent i5 (10th Gen+) computer, 8 GB RAM, 256 GB SSD, dedicated 50 Mbps broadband, power backup, secondary internet preferred, latency below 20 ms, Windows 10/11 Pro, CRM/QA/reporting/management CRM, cloud server, VPN and antivirus. The document also specifies NDA, GDPR/telecom data-protection compliance, no mobile-phone use on production floor, secure credentials and daily monitoring.
+Technical support section describes a dedicated Operations Manager, QA monitoring, Team Leader supervision, technical assistance during operations and 24×6 backend coordination. It also describes Bitmax-provided CRM/software with technical support and a no-deposit centre-owned CRM option; exact terms need confirmation against the signed agreement.
+5.2 International Telecom Chat Support – France
+Field
+Details stated in NTX_65772_2026.pdf
+Project Code / Client Code
+NTX/65772/2026 / 8282/26/NTX
+Country / language
+France / English
+Project duration / Go-live TAT
+2 years / 45 days
+Channel / process
+Inbound international telecom customer chat support.
+Team size
+15 Chat Support Agents + 1 QA + 1 Team Leader = 17.
+Shift structure
+Shift A 07:00 AM–03:00 PM; Shift B 03:00 PM–11:00 PM; Sunday fixed weekly off.
+Monthly payout per head
+Agent ₹63,000; QA ₹68,600; Team Leader ₹65,000.
+Indicative monthly team billing
+₹10,78,600 (subject to attendance, billing, contractual and operational terms).
+Royalty
+8% of monthly billing/invoice value.
+Security deposit
+₹6.70 lakh where Bitmax provides CRM/software and associated technical infrastructure; document says refundable under agreed terms.
+Scope of work – France
+Handle inbound international telecom chats and identify customer concerns accurately.
+Support telecom services/plans, activation, connectivity, billing, account verification and approved troubleshooting.
+Escalate unresolved or technically complex issues; maintain accurate CRM dispositions and case remarks.
+Follow client SOPs, confidentiality, security, productivity, response-time and quality standards; avoid unauthorised copy/paste, shortcuts, system manipulation or SOP bypass.
+Indicative KPI targets in the SOW: SLA 90–95%+, FRT 30–60 seconds, AHT 2–3 minutes, CSAT 85–95%+, resolution ≥75%, quality ≥90%, attendance/schedule adherence 95%+, escalation accuracy ≥95% and chat response accuracy ≥95%. Final client-approved SLA/SOP prevails.
+The 45-day implementation plan covers onboarding/documentation/recruitment confirmation (days 1–10), product/process training (11–20), CRM/application training and mock chats (21–30), quality calibration/nesting/readiness (31–40), and final validation/client approval/go-live (41–45).
+The SOW details penalties/deductions for attendance and short login, KPI/quality non-compliance, critical errors, CRM/security violations, unauthorised shortcuts, IP/access violations, data breaches and project abandonment. Penalties are described as subject to applicable contractual terms and supporting evidence. It distinguishes Bitmax-managed CRM downtime from centre-owned CRM downtime.
+5.3 Telecom Customer Chat Support – Italy
+Field
+Details stated in 452_TYC_2026_ITALY_.pdf
+Project Code / Client Code
+452/TYC/2026 / 4326727/26
+Country / language
+Italy / English
+Channel
+Live chat support
+Duration / implementation TAT
+24 months (2 years) / 30 calendar days
+Operating model
+16×6, Monday–Saturday; Sunday weekly off.
+Shift structure
+05:30 AM–02:30 PM IST and 03:00 PM–11:00 PM IST.
+Team size
+16 Chat Agents + 1 Team Leader + 1 QA = 18.
+Monthly payout per head
+Agent ₹63,500; Team Leader ₹66,000; QA ₹69,500.
+Royalty
+7.5% of gross monthly billing amount.
+Security deposit
+₹4.70 lakh if centre chooses Bitmax-managed CRM/software/cloud/technical resources; refundable subject to executed agreement.
+Scope of work – Italy
+Handle inbound live-chat interactions and telecom customer queries.
+Account verification/authentication; SIM activation and troubleshooting; mobile network troubleshooting; billing/payment enquiries; plan upgrades/modifications; device compatibility and eSIM support where applicable.
+Service activation/deactivation, number portability, international roaming, technical escalations, complaint registration/tracking, CRM documentation and knowledge-base compliance.
+Provide customer education/self-service guidance and follow approved SOPs, GDPR/privacy and security requirements.
+The SOW lists targets including service level ≥95%, first/average response ≤30 seconds, AHT 3–5 minutes, resolution ≥85%, FCR ≥80%, CSAT ≥90%, quality ≥92%, attendance ≥98%, schedule adherence ≥95%, productivity ≥90%, escalation accuracy ≥98%, documentation accuracy ≥99% and knowledge-base compliance 100%. Success criteria later state SLA compliance ≥85%, creating a target inconsistency that management must resolve.
+Infrastructure/system requirements include dedicated workstation, minimum 100 Mbps business broadband, static IP, dual power backup, secure premises, Windows 11 Pro, i5 10th Gen/Ryzen 5 or higher, 16 GB RAM, 512 GB SSD, 22-inch FHD monitor, noise-cancelling USB headset, VPN, endpoint security, firewall, MFA, backup/disaster recovery and specified CRM dashboards. The document offers Bitmax-managed infrastructure (₹4.70 lakh deposit; 7.5% royalty; 24×7 technical support) or centre-managed infrastructure (no Bitmax security deposit; centre bears its own technology responsibilities).
+6. Other project categories shown in the portfolio presentation
+The 17-page Global Projects commercial/setup presentation lists the following project categories, but it does not identify individual client names or complete project codes for them in the pages reviewed:
+Category in presentation
+Operating concept / staffing example stated
+Banking Chat Support (BFSI) – 24/7
+Example per shift: 20 L1 agents, 5 L2 agents, 1 Team Leader/QA, 1 Project Manager and 2 Technical Support; three shifts for 24/7 operation.
+Europe Electronic Chat Support – 24×6
+Example: 20 chat agents per shift, 1 Team Leader, 1 QA; 2–3 concurrent chats per agent; GDPR compliance mandatory.
+USA Live Game Chat Support – 24×7
+Example: 20 chat agents per shift, 1 QA, 1 Team Leader; Trust & Safety monitoring and multi-chat skills.
+BPO / KPO / LPO / Software & CRM-based
+Listed as project categories; individual client/project SOWs not provided in this presentation.
+Important: BFSI, Europe Electronic Chat and USA Live Game Chat are category/operating-model examples in the presentation. Do not tell a caller that these are currently open or allocated projects unless management supplies a current approved project availability list.
+7. General centre onboarding and project activation process
+The company profile and supporting operations documents describe a typical process. The precise sequence may vary by project:
+Submit an application/request for project details.
+Complete centre KYC and documentation.
+Complete due diligence and verification.
+Execute NDA before confidential project/client information is shared.
+Discuss project scope, centre capability and commercial terms.
+Complete SLA and other applicable agreements.
+Conduct centre visit/infrastructure evaluation and obtain approval.
+Receive applicable LOI/project confirmation, where part of the process.
+Complete CRM/software installation, network/security setup and agent recruitment.
+Complete process/product training, mock calls/chats and certification.
+Obtain final operational approval and proceed to go-live.
+8. Centre operating responsibilities and requirements
+Provide office space, dedicated seats/workstations and shift-wise manpower as per the project SOW.
+Recruit and maintain agents, Team Leader, QA and any project-specific operational/technical roles.
+Maintain agreed attendance, daily login count, shift coverage, productivity and schedule adherence.
+Provide reliable business internet, static IP where required, backup ISP where specified, UPS/generator and business continuity.
+Use approved CRM, dialer, VPN, workstation software and security controls; do not share credentials or bypass system restrictions.
+Follow client SOPs, NDA, SLA, data-protection requirements, QA processes and escalation matrix.
+Submit daily/weekly/monthly attendance, operations, productivity, QA, SLA, escalation and compliance reports as required.
+9. Commercial framework – do not merge project-specific terms
+The supplied materials contain different commercial values in different documents. These may relate to different projects, different infrastructure options or different document versions. They must not be collapsed into one universal rate.
+Source / project
+Royalty stated
+Security deposit stated
+Other notes
+Company profile FAQ
+8%–10% monthly billing, as agreed at agreement time.
+Software/tool security described as refundable under agreement; no single amount.
+Profile says no upfront project fee, but tool/software charges may apply.
+Board Review & Authentication PDF
+9% monthly royalty inclusive of GST.
+70%–80% refundable security deposit before allocation; project hold up to 20 days with 20% retention if withdrawn.
+USD billing and forex-enabled account are also stated.
+Romania RO/567772/2026
+8.5% monthly billing.
+₹7.60 lakh refundable security deposit.
+Project-specific terms; CRM/technical support conditions in SOW.
+France NTX/65772/2026
+8% monthly billing.
+₹6.70 lakh if Bitmax CRM/software infrastructure is used.
+No Bitmax deposit where centre uses its own CRM/software, per SOW.
+Italy 452/TYC/2026
+7.5% gross monthly billing.
+₹4.70 lakh if Bitmax-managed infrastructure is used.
+No Bitmax deposit under centre-managed infrastructure option, per SOW.
+Commercial Setup Presentation
+9% monthly royalty, inclusive of GST.
+70%–80% before onboarding; remaining 20% during SLA signing.
+Also states project cost example ₹5 lakh, 20-day hold and 20% non-refundable on withdrawal.
+Management decision required: Confirm which commercial document is current and controlling, and whether the Board Review/PPT terms are a general policy or only a proposal/example. For LEO, quote royalty, deposit, payout, refund, hold fee, penalties or billing currency only from the latest approved SOW and executed agreement for the specific project.
+10. Source inconsistencies and points requiring correction
+Issue
+What the source files say
+Management decision needed
+Company/legal identity
+Company profile describes Global Projects as US/UK-based and collaborating with Bitmax Group; other documents refer to Global Project Associates and Bitmax Technology Pvt Ltd.
+Confirm legal entities, roles, jurisdiction, license details and approved public wording.
+Royalty
+Company FAQ 8–10%; Board/PPT 9%; Romania 8.5%; France 8%; Italy 7.5%.
+Confirm whether project-specific rates supersede general rates and identify controlling signed schedule.
+Security deposit
+General documents describe 70–80% or refundable tool/security amount; individual SOWs specify ₹7.60L Romania, ₹6.70L France, ₹4.70L Italy under Bitmax CRM option.
+Confirm current amounts, refund conditions, deductions, timing and infrastructure-option applicability.
+No upfront fee vs deposit
+Company profile says no upfront project fee but also says refundable tool/software charges may apply; board documents describe security deposit before allocation.
+Approve precise explanation distinguishing project fee, software fee and refundable security deposit.
+Romania refund wording
+Romania SOW says deposit is fully refundable under all circumstances; elsewhere general documents say refund is subject to agreement/conditions.
+Confirm exact contractual refund language before LEO repeats it.
+Italy SLA benchmark
+KPI table lists service level ≥95%; success criteria later list SLA compliance ≥85%.
+Confirm which threshold is correct.
+Technical support scope
+Project documents differ on 16×6, 24×6 and 24×7 support wording and responsibility.
+Confirm per-project support hours, response commitments and downtime liability.
+Project status
+Project SOWs describe project terms but do not establish whether the project is currently open, paused, allocated or accepting new centres.
+Provide a dated live project-status register and owner.
+11. LEO knowledge and response rules
+LEO should be trained to answer Global Projects enquiries using the approved company profile and the relevant project-specific SOW. It must keep general company information separate from individual project details.
+LEO may answer
+What service categories Global Projects lists: BPO/call centre, backend, lead generation, software/CRM, KPO and LPO.
+How inbound and outbound call-centre work differs.
+What backend, lead-generation and software project work generally involves, using the company profile wording.
+Project-specific scope, country, language, shift, team structure, payout and infrastructure only when the relevant project document is approved for the caller’s access level.
+The general onboarding process and centre-readiness requirements.
+LEO must not do
+Do not claim a project is currently available, guaranteed or allocated without a current status confirmation.
+Do not mix Romania, France and Italy project details, payouts, staffing or KPIs.
+Do not present presentation examples (BFSI, Europe chat, USA gaming) as active projects unless confirmed.
+Do not invent client identity, project scope, payout, royalty, deposit, refund timing, penalty or go-live date.
+Do not disclose internal-only commercial, legal, client-sensitive or security details to a public caller unless management explicitly approves that access.
+Do not describe unverified licensing, registration, website or client claims as independently verified.
+When information conflicts or is missing, state that an authorised representative must confirm the latest approved details.
+Recommended response when asked about a specific project
+“I can explain the project details available in the approved project brief. Project availability and final commercial terms are subject to current confirmation and the signed agreement. May I know which project code or country you are enquiring about?”
+12. Management confirmation checklist
+Confirm company legal identity, ownership/relationship and public-facing description.
+Confirm website(s), official email addresses, phone numbers and authorised representatives.
+Confirm whether the Romania, France and Italy SOWs are current, approved and actively available.
+Confirm whether the project codes/client codes may be disclosed to callers or only to qualified centres.
+Confirm current project status, centre capacity, required headcount and recruitment window for each project.
+Confirm commercial rates, deposit amounts, refund rules, royalty GST treatment and infrastructure options.
+Confirm which project documents are public, partner-only, confidential or internal.
+Confirm the correct Italy SLA success threshold and all support-hour commitments.
+Confirm whether general BFSI, Europe electronic chat and USA gaming categories represent active opportunities or illustrative models.
+Provide a dated project register with status, owner and last-updated timestamp.
+13. Source documents used
+Source file
+Information used
+Global Projects company profile content (extracted text shared in conversation)
+Company description, service categories, facilities, FAQ, group relationship, general onboarding, contact references and general commercial statements.
+RO_567772_2026.pdf (7 pages)
+Romania telecom chat support project code, scope, staffing, shifts, payouts, KPIs, infrastructure, timeline, support, royalty and deposit.
+NTX_65772_2026 (1).pdf (16 pages)
+France telecom chat support SOW, staffing, shifts, payout, KPI, training, royalty, deposit, infrastructure, penalties, compliance and CRM options.
+452_TYC_2026_ITALY_.pdf (13 pages)
+Italy telecom chat support SOW, staffing, shifts, payout, KPIs, infrastructure, technical support, royalty, deposit and CRM options.
+Global_Projects_Detailed_Commercial_Setup_Presentation(1).pptx (17 slides)
+BFSI, Europe electronic chat and USA live game chat categories; sample staffing, commercial, infrastructure, KPI and risk framework.
+Global_Projects_Board_Review_Document(1).pdf
+Company/aggregator structure, general royalty/deposit/hold framework, legal and financial controls, infrastructure, penalty and onboarding items.
+Management review / sign-off
+Review item
+Decision / comments
+Company profile and relationship
+____________________________________________________________
+Service categories
+____________________________________________________________
+Romania project SOW
+☐ Approved  ☐ Corrections required  ☐ Not current
+France project SOW
+☐ Approved  ☐ Corrections required  ☐ Not current
+Italy project SOW
+☐ Approved  ☐ Corrections required  ☐ Not current
+Commercial framework
+____________________________________________________________
+Public vs restricted LEO knowledge
+____________________________________________________________
+Approved by / designation / date
+____________________________________________________________
+Next review date
+____________________________________________________________
+Use in LEO: After management approval, load the company profile as general Global Projects knowledge and each project SOW as a separate, tagged project record (country + project code + version + approval status + access level). Keep the commercial and project-status register separately versioned. This prevents LEO from mixing project details or quoting outdated terms.

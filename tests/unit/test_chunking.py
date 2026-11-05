@@ -9,12 +9,12 @@ def test_chunking_empty_string() -> None:
 
 
 def test_chunking_short_text() -> None:
-    text = "Bitmax Group provides cloud solutions."
+    text = "Global Projects provides project management solutions."
     chunks = chunk_text(text, chunk_size=50, overlap=10)
     assert len(chunks) == 1
     assert chunks[0].chunk_index == 0
     assert chunks[0].content == text
-    assert chunks[0].token_estimate == 5
+    assert chunks[0].token_estimate == 6
 
 
 def test_chunking_long_text_creates_overlap() -> None:

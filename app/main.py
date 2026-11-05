@@ -47,14 +47,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     # 2. Database connection pool initialization
-    try:
-        init_db()
-        from app.services.demo_call_service import get_demo_service
-        await get_demo_service().load_from_db()
-    except Exception as exc:
-        logger.error("database_init_failed", error=str(exc))
-        if settings.is_production:
-            raise
+    if not settings.is_testing:
+        try:
+            init_db()
+            from app.services.demo_call_service import get_demo_service
+            await get_demo_service().load_from_db()
+        except Exception as exc:
+            logger.error("database_init_failed", error=str(exc))
+            if settings.is_production:
+                raise
 
     yield
 
@@ -71,7 +72,7 @@ def create_application() -> FastAPI:
         title=settings.app_name,
         version=settings.app_version,
         description=(
-            "LEO - Enterprise AI assistant backend for Bitmax Group. "
+            "LEO - Enterprise AI assistant backend for Global Projects. "
             "Provides grounded customer conversational Q&A, approved knowledge retrieval, "
             "and secure knowledge management."
         ),
@@ -123,7 +124,6 @@ def create_application() -> FastAPI:
             )
 
     return app
-
 
 
 app = create_application()

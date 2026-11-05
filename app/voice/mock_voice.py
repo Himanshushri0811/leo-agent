@@ -117,7 +117,7 @@ class MockSTTProvider:
             )
 
         # Default simulated customer utterance in Indian English
-        sample_text = "Hello, can you tell me about Bitmax Group's cloud and AI services?"
+        sample_text = "Hello, can you tell me about Global Projects' project opportunities and services?"
         return AudioTranscriptionResponse(
             text=sample_text,
             confidence=0.98,

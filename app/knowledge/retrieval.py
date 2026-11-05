@@ -38,6 +38,8 @@ async def retrieve_relevant_chunks(
     embeddings_provider: EmbeddingsProvider,
     settings: Settings,
     session: AsyncSession | None = None,
+    request_id: str | None = None,
+    call_id: str | None = None,
 ) -> list[RetrievalResult]:
     """
     Embed the query and perform cosine similarity search against approved chunks.
@@ -53,6 +55,15 @@ async def retrieve_relevant_chunks(
     t_embed_start = time.perf_counter()
     embed_resp = await embeddings_provider.embed(EmbeddingRequest(texts=[query]))
     embed_duration_ms = (time.perf_counter() - t_embed_start) * 1000.0
+
+    logger.info(
+        "stage_timing",
+        request_id=request_id or "unknown",
+        call_id=call_id or "unknown",
+        stage="embedding_generation",
+        stage_name="Embedding generation",
+        duration_ms=round(embed_duration_ms, 2),
+    )
 
     if not embed_resp.embeddings:
         logger.info(
@@ -151,6 +162,14 @@ async def retrieve_relevant_chunks(
                     results = await _query(sess)
         query_duration_ms = (time.perf_counter() - t_db_start) * 1000.0
         total_retrieval_ms = (time.perf_counter() - t_retrieval_start) * 1000.0
+        logger.info(
+            "stage_timing",
+            request_id=request_id or "unknown",
+            call_id=call_id or "unknown",
+            stage="vector_database_query",
+            stage_name="Vector database connection/query",
+            duration_ms=round(query_duration_ms, 2),
+        )
         source_identifiers = list({f"{r.source_name} (chunk {r.chunk_index})" for r in results})
         logger.info(
             "timing_knowledge_retrieval",

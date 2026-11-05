@@ -22,7 +22,7 @@ MULTILINGUAL_TEST_DATASET = [
     {
         "id": "EVAL-EN-01",
         "lang": SupportedLanguage.ENGLISH,
-        "input": "What core enterprise cloud consulting services does Bitmax Group offer?",
+        "input": "What core project management services does Global Projects offer?",
         "expected_lang": SupportedLanguage.ENGLISH,
         "expected_locale": "en-IN",
         "topic": "services",

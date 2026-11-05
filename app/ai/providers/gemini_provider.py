@@ -177,14 +177,20 @@ class GeminiLLMProvider:
         t_start = time.perf_counter()
         system_instruction, contents = self._prepare_contents(request)
 
+        thinking_cfg = None
+        if hasattr(types, "ThinkingConfig"):
+            try:
+                thinking_cfg = types.ThinkingConfig(thinking_budget=0)
+            except Exception:
+                thinking_cfg = None
+
         config = types.GenerateContentConfig(
             system_instruction=system_instruction,
-            max_output_tokens=request.max_tokens or self._max_tokens,
-            temperature=request.temperature
-            if request.temperature is not None
-            else self._temperature,
+            max_output_tokens=min(request.max_tokens or self._max_tokens, 256),
+            temperature=(
+                request.temperature if request.temperature is not None else self._temperature
+            ),
             stop_sequences=request.stop_sequences or None,
-            http_options=types.HttpOptions(timeout=int(self._timeout_seconds * 1000)),
         )
 
         @retry(
@@ -317,14 +323,22 @@ class GeminiLLMProvider:
         t_start = time.perf_counter()
         system_instruction, contents = self._prepare_contents(request)
 
+        thinking_cfg = None
+        if hasattr(types, "ThinkingConfig"):
+            try:
+                thinking_cfg = types.ThinkingConfig(thinking_budget=0)
+            except Exception:
+                thinking_cfg = None
+
         config = types.GenerateContentConfig(
             system_instruction=system_instruction,
-            max_output_tokens=request.max_tokens or self._max_tokens,
+            max_output_tokens=min(request.max_tokens or self._max_tokens, 256),
             temperature=(
                 request.temperature if request.temperature is not None else self._temperature
             ),
             stop_sequences=request.stop_sequences or None,
             http_options=types.HttpOptions(timeout=int(self._timeout_seconds * 1000)),
+            thinking_config=thinking_cfg,
         )
 
         ttft_ms: float | None = None

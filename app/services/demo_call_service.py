@@ -1,29 +1,50 @@
 """
+
 Demo Call Center Service for LEO AI Backend.
 
+
+
 Provides:
+
 - 25 concurrent isolated call session state machines.
+
 - Validated lifecycle transitions with duplicate event rejection.
+
 - Live integration with LEO's real RAG orchestrator (Mock / OpenAI / Anthropic).
+
 - Escalation detection rules (customer request, low confidence, manual).
+
 - Human agent queue management with simulated assignment.
+
 - Async SSE event stream broadcaster.
+
 - Sensitive customer data masking.
+
 - Clean separation between demo simulation and production telephony.
+
 - PostgreSQL persistence for calls, transcripts, and handoffs via DemoCallRepository.
 
+
+
 MULTI-WORKER DEPLOYMENT LIMITATIONS:
+
 - The in-memory SSE event bus (`self._listeners`) uses `asyncio.Queue` per-process.
-  When deploying with multiple Uvicorn/Gunicorn workers, clients connected to Worker A
-  will not receive broadcast events produced by Worker B unless backed by an external
-  pub/sub message broker such as Redis, RabbitMQ, or PostgreSQL LISTEN/NOTIFY.
+
+     When deploying with multiple Uvicorn/Gunicorn workers, clients connected to Worker A
+
+     will not receive broadcast events produced by Worker B unless backed by an external
+
+     pub/sub message broker such as Redis, RabbitMQ, or PostgreSQL LISTEN/NOTIFY.
+
 - Session concurrency locks (`self._lock`) are local to the process. In a multi-worker
-  cluster, global concurrency enforcement requires distributed locking or a central
-  database row-count check.
+
+     cluster, global concurrency enforcement requires distributed locking or a central
+
+     database row-count check.
+
 """
 
 from __future__ import annotations
-
 import asyncio
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
@@ -32,7 +53,6 @@ import re
 import time
 from typing import Any
 import uuid
-
 from app.ai.interfaces import Message
 from app.ai.orchestrator import (
     ChatRequest as OrchChatRequest,
@@ -59,9 +79,7 @@ from app.schemas.demo import (
 from app.voice.turn_manager import TurnManager, TurnState, UtteranceCancellationToken
 
 logger = get_logger(__name__)
-
 MAX_CONCURRENT_SESSIONS = 25
-
 # Valid state transitions
 VALID_TRANSITIONS: dict[CallStatus, set[CallStatus]] = {
     CallStatus.RINGING: {
@@ -165,7 +183,9 @@ VALID_TRANSITIONS: dict[CallStatus, set[CallStatus]] = {
     CallStatus.FAILED: set(),  # Terminal state
 }
 
+
 # Explicit regex patterns for unambiguous human agent handoff requests
+
 HUMAN_ESCALATION_PATTERNS = [
     re.compile(
         r"\b(speak|talk|transfer|connect|switch|put\s+me\s+through)\s+(to|with)?\s*(a\s+|an\s+)?(human|agent|person|representative|specialist|operator|manager|supervisor)\b",
@@ -195,11 +215,14 @@ HUMAN_ESCALATION_PATTERNS = [
 
 def is_explicit_human_request(text: str) -> bool:
     """Return True only if the caller explicitly requested escalation to a human agent."""
+
     clean = text.strip()
+
     return any(p.search(clean) for p in HUMAN_ESCALATION_PATTERNS)
 
 
 # Backward-compatibility alias for tests
+
 ESCALATION_KEYWORDS = [
     "speak to a person",
     "talk to a human",
@@ -210,6 +233,7 @@ ESCALATION_KEYWORDS = [
     "speak to a human",
     "talk to an agent",
 ]
+
 
 DEFAULT_AGENTS: list[HumanAgent] = [
     HumanAgent(
@@ -242,6 +266,7 @@ DEFAULT_AGENTS: list[HumanAgent] = [
     ),
 ]
 
+
 SAMPLE_CALLERS = [
     ("Acme Corp - IT Director", "+1 (555) 349-8291"),
     ("Global Logistics - Ops Lead", "+1 (555) 781-4402"),
@@ -253,37 +278,66 @@ SAMPLE_CALLERS = [
 
 class DemoCallService:
     def __init__(self, settings: Settings | None = None) -> None:
+
         self._settings = settings or get_settings()
+
         self._lock = asyncio.Lock()
+
         self._calls: dict[str, DemoCall] = {}
+
         self._processed_event_keys: set[str] = set()
+
         self._agents: dict[str, HumanAgent] = {a.agent_id: a.model_copy() for a in DEFAULT_AGENTS}
+
         self._listeners: list[asyncio.Queue[dict[str, Any]]] = []
+
         self._llm = get_llm_provider(self._settings)
+
         self._embeddings = get_embeddings_provider(self._settings)
+
         self._auto_answer_tasks: dict[str, asyncio.Task[None]] = {}
+        self._background_tasks: set[asyncio.Task[Any]] = set()
+
         self.turn_manager = TurnManager()
+        self._audio_cache: dict[str, list[bytes]] = {}
+
         # TTS provider — lazy-initialised to avoid import errors when not configured
+
         self._tts = None
+
         try:
             from app.voice import get_tts_provider
 
             self._tts = get_tts_provider(self._settings)
+
             logger.info("tts_provider_initialized", provider=self._tts.provider_name)
+
         except Exception as exc:
             logger.warning("tts_provider_init_failed", error=str(exc))
 
     def mask_phone(self, phone: str) -> str:
         """Redact sensitive customer phone number digits."""
+
         digits = re.sub(r"\D", "", phone)
+
         if len(digits) >= 10:
             return f"+{digits[:-7]} (***) ***-{digits[-4:]}"
+
         return "+1 (***) ***-" + phone[-4:] if len(phone) >= 4 else "***"
+
+    async def await_pending_persists(self, timeout: float = 5.0) -> None:
+        """Wait for in-flight background persistence tasks to complete."""
+        if self._background_tasks:
+            pending = list(self._background_tasks)
+            try:
+                await asyncio.wait_for(asyncio.gather(*pending, return_exceptions=True), timeout=timeout)
+            except Exception:
+                pass
 
     async def _persist_call(self, call: DemoCall) -> None:
         """Persist a call record to PostgreSQL via DemoCallRepository."""
         try:
-            async with asyncio.timeout(1.5):
+            async with asyncio.timeout(5.0):
                 from app.db.session import session_context
                 from app.repositories.demo_call_repository import DemoCallRepository
 
@@ -291,34 +345,53 @@ class DemoCallService:
                     repo = DemoCallRepository(session)
                     await repo.save_call(call)
         except Exception as exc:
-            logger.debug("db_persist_call_skipped", call_id=call.call_id, error=str(exc))
+            logger.error("db_persist_call_failed", call_id=call.call_id, error=str(exc))
+            raise
 
     def _schedule_persist_call(self, call: DemoCall) -> None:
         """Schedule non-blocking background persistence to database."""
-        asyncio.create_task(self._persist_call(call.model_copy(deep=True)))
+        async def _wrapper() -> None:
+            try:
+                await self._persist_call(call.model_copy(deep=True))
+            except Exception as exc:
+                logger.error("db_persist_call_background_error", call_id=call.call_id, error=str(exc))
+
+        task = asyncio.create_task(_wrapper())
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     async def _persist_transcript_turn(
         self, call_id: str, turn: TranscriptTurn, turn_index: int
     ) -> None:
         """Persist a transcript turn to PostgreSQL via DemoCallRepository."""
         try:
-            async with asyncio.timeout(1.5):
+            async with asyncio.timeout(5.0):
                 from app.db.session import session_context
                 from app.repositories.demo_call_repository import DemoCallRepository
 
                 async with session_context() as session:
                     repo = DemoCallRepository(session)
+                    call_rec = await repo.get_call_record(call_id)
+                    if call_rec is None and call_id in self._calls:
+                        await repo.save_call(self._calls[call_id])
                     await repo.add_transcript_turn(call_id, turn, turn_index)
         except Exception as exc:
-            logger.debug("db_persist_transcript_skipped", call_id=call_id, error=str(exc))
+            logger.error("db_persist_transcript_failed", call_id=call_id, error=str(exc))
+            raise
 
     def _schedule_persist_transcript_turn(
         self, call_id: str, turn: TranscriptTurn, turn_index: int
     ) -> None:
         """Schedule non-blocking background persistence of transcript turn."""
-        asyncio.create_task(
-            self._persist_transcript_turn(call_id, turn.model_copy(deep=True), turn_index)
-        )
+        async def _wrapper() -> None:
+            try:
+                await self._persist_transcript_turn(call_id, turn.model_copy(deep=True), turn_index)
+            except Exception as exc:
+                logger.error("db_persist_transcript_background_error", call_id=call_id, error=str(exc))
+
+        task = asyncio.create_task(_wrapper())
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     async def _persist_handoff(
         self,
@@ -331,12 +404,15 @@ class DemoCallService:
     ) -> None:
         """Persist an agent escalation handoff record to PostgreSQL."""
         try:
-            async with asyncio.timeout(1.5):
+            async with asyncio.timeout(5.0):
                 from app.db.session import session_context
                 from app.repositories.demo_call_repository import DemoCallRepository
 
                 async with session_context() as session:
                     repo = DemoCallRepository(session)
+                    call_rec = await repo.get_call_record(call_id)
+                    if call_rec is None and call_id in self._calls:
+                        await repo.save_call(self._calls[call_id])
                     await repo.record_handoff(
                         call_id=call_id,
                         agent_id=agent_id,
@@ -346,90 +422,177 @@ class DemoCallService:
                         notes=notes,
                     )
         except Exception as exc:
-            logger.debug("db_persist_handoff_skipped", call_id=call_id, error=str(exc))
+            logger.error("db_persist_handoff_failed", call_id=call_id, error=str(exc))
+            raise
 
     async def _record_transcript_turn(self, call: DemoCall, turn: TranscriptTurn) -> None:
         """Append turn to in-memory transcript under lock and schedule persistence to database."""
+
         async with self._lock:
             turn_index = len(call.transcript)
+
             call.transcript.append(turn)
+
         self._schedule_persist_transcript_turn(call.call_id, turn, turn_index)
 
-    async def load_from_db(self, limit: int = 50) -> int:
-        """Re-hydrate in-memory call cache from PostgreSQL on startup or recovery."""
-        try:
-            from app.db.session import session_context
-            from app.repositories.demo_call_repository import DemoCallRepository
+    
+    async def load_from_db(self, limit: int = 5000) -> int:
+        """Re-hydrate in-memory call cache from PostgreSQL."""
 
-            async with session_context() as session:
-                repo = DemoCallRepository(session)
-                calls = await repo.list_calls(limit=limit)
-                async with self._lock:
-                    for call in calls:
-                        if call.call_id not in self._calls:
-                            self._calls[call.call_id] = call
-                logger.info("rehydrated_calls_from_db", count=len(calls))
-                return len(calls)
-        except Exception as exc:
-            logger.debug("db_load_calls_skipped", error=str(exc))
+        try:
+            async with asyncio.timeout(15.0):
+                from app.db.session import session_context
+                from app.repositories.demo_call_repository import DemoCallRepository
+
+                async with session_context() as session:
+                    repo = DemoCallRepository(session)
+                    calls = await repo.list_calls(limit=limit)
+
+                    async with self._lock:
+                        for call in calls:
+                            if call.call_id not in self._calls:
+                                self._calls[call.call_id] = call
+                            elif self._calls[call.call_id].status in (CallStatus.COMPLETED, CallStatus.FAILED):
+                                self._calls[call.call_id] = call
+
+                    logger.info(
+                        "rehydrated_calls_from_db",
+                        count=len(calls),
+                    )
+                    return len(calls)
+
+        except Exception:
+            logger.exception("db_load_calls_failed")
             return 0
 
     async def get_or_load_call(self, call_id: str) -> DemoCall | None:
         """Retrieve a call from cache, or attempt to load from database if missing."""
+
         call = self.get_call(call_id)
+
         if call is not None:
             return call
+
+        try:
+            async with asyncio.timeout(5.0):
+                from app.db.session import session_context
+                from app.repositories.demo_call_repository import DemoCallRepository
+
+                async with session_context() as session:
+                    repo = DemoCallRepository(session)
+                    db_call = await repo.get_call(call_id)
+                    if db_call is not None:
+                        async with self._lock:
+                            self._calls[call_id] = db_call
+                        return db_call
+
+        except Exception as exc:
+            logger.error("db_get_call_failed", call_id=call_id, error=str(exc))
+
+        return None
+
+    async def get_calls_async(
+        self,
+        status_filter: str | None = None,
+        search_query: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DemoCall]:
+        """Fetch calls from persistent PostgreSQL storage, merging with active in-memory state."""
         try:
             from app.db.session import session_context
             from app.repositories.demo_call_repository import DemoCallRepository
 
             async with session_context() as session:
                 repo = DemoCallRepository(session)
-                db_call = await repo.get_call(call_id)
-                if db_call is not None:
-                    async with self._lock:
-                        self._calls[call_id] = db_call
-                    return db_call
+                db_calls = await repo.list_calls(limit=1000)
+                async with self._lock:
+                    for c in db_calls:
+                        if c.call_id not in self._calls:
+                            self._calls[c.call_id] = c
+                        elif self._calls[c.call_id].status in (CallStatus.COMPLETED, CallStatus.FAILED):
+                            self._calls[c.call_id] = c
         except Exception as exc:
-            logger.debug("db_get_call_failed", call_id=call_id, error=str(exc))
+            logger.warning("db_get_calls_async_sync_failed", error=str(exc))
+
+        return self.list_calls(
+            status_filter=status_filter,
+            search_query=search_query,
+            limit=limit,
+            offset=offset,
+        )
+
+    async def get_metrics_async(self) -> CallMetrics:
+        """Fetch metrics computed from persisted calls and active sessions."""
+        try:
+            from app.db.session import session_context
+            from app.repositories.demo_call_repository import DemoCallRepository
+
+            async with session_context() as session:
+                repo = DemoCallRepository(session)
+                db_calls = await repo.list_calls(limit=5000)
+                async with self._lock:
+                    for c in db_calls:
+                        if c.call_id not in self._calls:
+                            self._calls[c.call_id] = c
+                        elif self._calls[c.call_id].status in (CallStatus.COMPLETED, CallStatus.FAILED):
+                            self._calls[c.call_id] = c
+        except Exception as exc:
+            logger.warning("db_get_metrics_async_sync_failed", error=str(exc))
+
+        return self.get_metrics()
+
         return None
 
     async def subscribe(self) -> asyncio.Queue[dict[str, Any]]:
         """Subscribe to real-time dashboard events via SSE."""
+
         queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=100)
+
         async with self._lock:
             self._listeners.append(queue)
+
         return queue
 
     async def unsubscribe(self, queue: asyncio.Queue[dict[str, Any]]) -> None:
+
         async with self._lock:
             if queue in self._listeners:
                 self._listeners.remove(queue)
 
     async def broadcast_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Broadcast an event to all connected dashboard SSE clients."""
+
         payload = {
             "event": event_type,
             "data": data,
             "timestamp": datetime.now(UTC).isoformat(),
         }
+
         async with self._lock:
             stale_queues = []
+
             for q in self._listeners:
                 try:
                     q.put_nowait(payload)
+
                 except asyncio.QueueFull:
                     stale_queues.append(q)
+
             for sq in stale_queues:
                 if sq in self._listeners:
                     self._listeners.remove(sq)
 
     def is_duplicate_event(self, call_id: str, event_key: str) -> bool:
         """Detect and reject duplicate events for session isolation."""
+
         combined = f"{call_id}:{event_key}"
+
         if combined in self._processed_event_keys:
             return True
+
         self._processed_event_keys.add(combined)
+
         return False
 
     async def simulate_incoming_call(
@@ -440,12 +603,14 @@ class DemoCallService:
         initial_message: str | None = None,
     ) -> DemoCall:
         """Create a new incoming call session up to the 25-concurrency limit."""
+
         async with self._lock:
             active_count = sum(
                 1
                 for c in self._calls.values()
                 if c.status not in (CallStatus.COMPLETED, CallStatus.FAILED)
             )
+
             if active_count >= MAX_CONCURRENT_SESSIONS:
                 raise ValueError(
                     f"Concurrency limit reached: {MAX_CONCURRENT_SESSIONS} active sessions. "
@@ -453,11 +618,14 @@ class DemoCallService:
                 )
 
             call_id = f"call_{uuid.uuid4().hex[:10]}"
+
             session_id = f"demo_sess_{uuid.uuid4().hex[:12]}"
 
             if not caller_name or not caller_phone:
                 sample_name, sample_phone = random.choice(SAMPLE_CALLERS)
+
                 caller_name = caller_name or sample_name
+
                 caller_phone = caller_phone or sample_phone
 
             masked_phone = self.mask_phone(caller_phone)
@@ -484,22 +652,26 @@ class DemoCallService:
                     "audio_codec": "Opus 48kHz (Simulated)",
                     "region": "us-east-1",
                     "initial_message": initial_message
-                    or "Hello! I am calling to inquire about Bitmax Group enterprise services.",
+                    or "Hello! I am calling to inquire about Global Projects services.",
                 },
             )
+
             self._calls[call_id] = call
 
-        # Persist to database
-        await self._persist_call(call)
+        # Persist to database asynchronously
+        self._schedule_persist_call(call)
 
         # Broadcast call arrival
+
         await self.broadcast_event("call_ringing", call.model_dump(mode="json"))
 
         # Schedule auto-answer if configured
+
         if auto_answer_delay_sec > 0:
             task = asyncio.create_task(
                 self._auto_answer_after_delay(call_id, auto_answer_delay_sec)
             )
+
             self._auto_answer_tasks[call_id] = task
 
         return call
@@ -512,12 +684,14 @@ class DemoCallService:
         auto_answer_delay_sec: int = 2,
     ) -> DemoCall:
         """Create a simulated outbound call session with explicit stated purpose."""
+
         async with self._lock:
             active_count = sum(
                 1
                 for c in self._calls.values()
                 if c.status not in (CallStatus.COMPLETED, CallStatus.FAILED)
             )
+
             if active_count >= MAX_CONCURRENT_SESSIONS:
                 raise ValueError(
                     f"Concurrency limit reached: {MAX_CONCURRENT_SESSIONS} active sessions. "
@@ -525,11 +699,14 @@ class DemoCallService:
                 )
 
             call_id = f"call_{uuid.uuid4().hex[:10]}"
+
             session_id = f"demo_sess_{uuid.uuid4().hex[:12]}"
 
             if not customer_name or not customer_phone:
                 sample_name, sample_phone = random.choice(SAMPLE_CALLERS)
+
                 customer_name = customer_name or sample_name
+
                 customer_phone = customer_phone or sample_phone
 
             masked_phone = self.mask_phone(customer_phone)
@@ -559,95 +736,129 @@ class DemoCallService:
                     "initial_message": f"Hello, I understand you are calling regarding {call_purpose}.",
                 },
             )
+
             self._calls[call_id] = call
 
-        # Persist to database
-        await self._persist_call(call)
+        # Persist to database asynchronously
+        self._schedule_persist_call(call)
 
         # Broadcast call arrival
+
         await self.broadcast_event("call_ringing", call.model_dump(mode="json"))
 
         # Schedule auto-answer if configured
+
         if auto_answer_delay_sec > 0:
             task = asyncio.create_task(
                 self._auto_answer_after_delay(call_id, auto_answer_delay_sec)
             )
+
             self._auto_answer_tasks[call_id] = task
 
         return call
 
     async def _auto_answer_after_delay(self, call_id: str, delay_sec: int) -> None:
+
         try:
             await asyncio.sleep(delay_sec)
+
             async with self._lock:
                 call = self._calls.get(call_id)
+
                 if not call or call.status != CallStatus.RINGING:
                     return
+
             await self.execute_call_action(call_id, CallActionType.ANSWER)
+
         except asyncio.CancelledError:
             pass
+
         except Exception as exc:
             logger.error("auto_answer_failed", call_id=call_id, error=str(exc))
 
     async def transition_state(self, call_id: str, target_status: CallStatus) -> DemoCall:
         """Validate and transition call state machine."""
+
         async with self._lock:
             call = self._calls.get(call_id)
+
             if not call:
                 raise KeyError(f"Call {call_id} not found")
 
             current_status = call.status
+
             if target_status == current_status:
                 return call
 
             valid_targets = VALID_TRANSITIONS.get(current_status, set())
+
             if target_status not in valid_targets:
                 raise ValueError(
                     f"Invalid call state transition: cannot move from '{current_status}' to '{target_status}'"
                 )
 
             call.status = target_status
+
             if target_status == CallStatus.ACTIVE and not call.connected_at:
                 call.connected_at = datetime.now(UTC)
+
             elif target_status in (CallStatus.COMPLETED, CallStatus.FAILED):
                 call.ended_at = datetime.now(UTC)
+
                 if call.connected_at:
                     call.duration_seconds = int((call.ended_at - call.connected_at).total_seconds())
 
             # Cancel auto answer task if pending
+
             if target_status in (CallStatus.COMPLETED, CallStatus.FAILED):
                 task = self._auto_answer_tasks.pop(call_id, None)
+
                 if task and not task.done():
                     task.cancel()
 
                 # If an agent was assigned, free them up
+
                 if call.assigned_agent_id and call.assigned_agent_id in self._agents:
                     agent = self._agents[call.assigned_agent_id]
+
                     if agent.active_call_id == call_id:
                         agent.status = AgentStatus.AVAILABLE
+
                         agent.active_call_id = None
+
                         agent.calls_handled_today += 1
 
             # Synchronize TurnManager turn state
+
             if target_status == CallStatus.PROCESSING:
                 await self.turn_manager.set_state(call.session_id, TurnState.THINKING)
+
             elif target_status == CallStatus.SPEAKING:
                 await self.turn_manager.set_state(call.session_id, TurnState.SPEAKING)
+
             elif target_status == CallStatus.INTERRUPTED:
                 await self.turn_manager.set_state(call.session_id, TurnState.INTERRUPTED)
+
             elif target_status in (
                 CallStatus.ACTIVE,
                 CallStatus.WAITING_FOR_CLARIFICATION,
                 CallStatus.GREETING,
             ):
                 await self.turn_manager.set_state(call.session_id, TurnState.LISTENING)
+
             elif target_status in (CallStatus.COMPLETED, CallStatus.FAILED):
                 await self.turn_manager.cleanup_session(call.session_id)
 
             call.turn_state = str(await self.turn_manager.get_state(call.session_id))
 
-        # Persist updated status & duration (non-blocking)
-        self._schedule_persist_call(call)
+        # Persist updated status & duration
+        if target_status in (CallStatus.COMPLETED, CallStatus.FAILED):
+            try:
+                await self._persist_call(call)
+            except Exception as exc:
+                logger.error("db_persist_terminal_call_failed", call_id=call_id, error=str(exc))
+        else:
+            self._schedule_persist_call(call)
 
         await self.broadcast_event(
             "call_state_changed",
@@ -658,6 +869,7 @@ class DemoCallService:
                 "call": call.model_dump(mode="json"),
             },
         )
+
         return call
 
     async def execute_call_action(
@@ -667,33 +879,45 @@ class DemoCallService:
         reason: str | None = None,
     ) -> DemoCall:
         """Handle dashboard user actions (Answer, Reject, Mute, End)."""
+
         call = self.get_call(call_id)
+
         if not call:
             raise KeyError(f"Call {call_id} not found")
 
         # Duplicate action check
+
         action_key = f"{action}:{call.status}"
+
         if action not in (CallActionType.MUTE, CallActionType.UNMUTE):
             if self.is_duplicate_event(call_id, action_key):
                 logger.warning("duplicate_call_action_ignored", call_id=call_id, action=action)
+
                 return call
 
         if action == CallActionType.ANSWER:
             if call.status != CallStatus.RINGING:
                 raise ValueError(f"Cannot answer call in state {call.status}")
+
             # Step 1: Connecting
+
             await self.transition_state(call_id, CallStatus.CONNECTING)
+
             await asyncio.sleep(0.2)
+
             # Step 2: Greeting
+
             await self.transition_state(call_id, CallStatus.GREETING)
 
             # System connection turn
+
             init_turn = TranscriptTurn(
                 id=f"turn_{uuid.uuid4().hex[:8]}",
                 role=SpeakerRole.SYSTEM,
-                text="Call connected via LEO AI Virtual Agent Gateway (Bitmax Group Voice Mock Bridge).",
+                text="Call connected via LEO AI Virtual Agent Gateway (Global Projects Voice Bridge).",
                 timestamp=datetime.now(UTC),
             )
+
             await self._record_transcript_turn(call, init_turn)
 
             await self.broadcast_event(
@@ -705,15 +929,18 @@ class DemoCallService:
             )
 
             # Formulate greeting based on call direction
+
             if call.direction == CallDirection.OUTBOUND:
-                purpose = call.metadata.get("call_purpose", "your account inquiry")
+                purpose = call.metadata.get("call_purpose", "your project inquiry")
+
                 greeting_text = (
-                    f"Hello, this is LEO calling from Bitmax Group regarding {purpose}. "
+                    f"Hello, this is LEO calling from Global Projects regarding {purpose}. "
                     "Is this a convenient time to speak?"
                 )
+
             else:
                 greeting_text = (
-                    "Hello! Welcome to Bitmax Group. I'm LEO, your AI assistant. "
+                    "Hello! Welcome to Global Projects. I'm LEO, your AI assistant. "
                     "How can I help you today?"
                 )
 
@@ -736,10 +963,13 @@ class DemoCallService:
             )
 
             # Step 3: Transition to ACTIVE listening state
+
             await self.transition_state(call_id, CallStatus.ACTIVE)
 
             # Automatically dispatch initial customer inquiry after short pause
+
             initial_msg = call.metadata.get("initial_message")
+
             if initial_msg:
                 asyncio.create_task(
                     self._dispatch_customer_message_after_delay(call_id, initial_msg, delay=1.2)
@@ -748,19 +978,25 @@ class DemoCallService:
         elif action == CallActionType.REJECT:
             if call.status != CallStatus.RINGING:
                 raise ValueError(f"Cannot reject call in state {call.status}")
+
             call.latest_error = reason or "Call rejected by demo operator."
+
             await self.transition_state(call_id, CallStatus.COMPLETED)
 
         elif action == CallActionType.MUTE:
             async with self._lock:
                 call.is_muted = True
+
             await self._persist_call(call)
+
             await self.broadcast_event("call_muted", {"call_id": call_id, "is_muted": True})
 
         elif action == CallActionType.UNMUTE:
             async with self._lock:
                 call.is_muted = False
+
             await self._persist_call(call)
+
             await self.broadcast_event("call_muted", {"call_id": call_id, "is_muted": False})
 
         elif action in (CallActionType.BARGE_IN, CallActionType.INTERRUPT):
@@ -768,21 +1004,26 @@ class DemoCallService:
 
         elif action == CallActionType.END:
             await self.transition_state(call_id, CallStatus.CALL_ENDING)
+
             await self.transition_state(call_id, CallStatus.COMPLETED)
 
         return call
 
     async def handle_barge_in(self, call_id: str, reason: str = "user_barge_in") -> DemoCall:
         """Handle customer speech onset / barge-in, cancelling in-flight speech and generation."""
+
         call = self.get_call(call_id)
+
         if not call:
             raise KeyError(f"Call {call_id} not found")
 
         cancelled_token = await self.turn_manager.on_user_speech_start(
             call.session_id, reason=reason
         )
+
         if call.status in (CallStatus.SPEAKING, CallStatus.PROCESSING):
             await self.transition_state(call_id, CallStatus.INTERRUPTED)
+
             asyncio.create_task(self._reset_to_active_after_delay(call_id, delay=0.2))
 
         await self.broadcast_event(
@@ -793,55 +1034,83 @@ class DemoCallService:
                 "token_id": getattr(cancelled_token, "token_id", None),
             },
         )
+
         return call
 
     async def _reset_to_active_after_delay(self, call_id: str, delay: float = 0.6) -> None:
         """Asynchronously transition call state back to ACTIVE without blocking turn response."""
+
         await asyncio.sleep(delay)
+
         try:
             call = self.get_call(call_id)
+
             if call and call.status == CallStatus.SPEAKING:
                 await self.transition_state(call_id, CallStatus.ACTIVE)
+
         except Exception as exc:
             logger.debug("reset_to_active_failed", call_id=call_id, error=str(exc))
 
     async def _dispatch_customer_message_after_delay(
         self, call_id: str, message: str, delay: float = 1.0
     ) -> None:
+
         await asyncio.sleep(delay)
+
         try:
             call = self.get_call(call_id)
+
             if call and call.status == CallStatus.ACTIVE:
                 # Do not auto-dispatch if customer has already sent a message
+
                 customer_turns = [t for t in call.transcript if t.role == SpeakerRole.CUSTOMER]
+
                 if not customer_turns:
                     await self.send_customer_message(call_id, message)
+
         except Exception as exc:
             logger.error("initial_customer_message_failed", call_id=call_id, error=str(exc))
 
-    async def send_customer_message(self, call_id: str, message_text: str) -> TranscriptTurn:
+    async def send_customer_message(
+        self,
+        call_id: str,
+        message_text: str,
+        request_id: str | None = None,
+    ) -> TranscriptTurn:
         """Customer speaks a turn, triggering LEO AI response processing."""
+
         t_turn_start = time.perf_counter()
+        req_id = request_id or str(uuid.uuid4())
+
         call = self.get_call(call_id)
+
         if not call:
             raise KeyError(f"Call {call_id} not found")
+
         if call.status in (CallStatus.COMPLETED, CallStatus.FAILED, CallStatus.CALL_ENDING):
             raise ValueError(f"Cannot send message to finished call ({call.status})")
 
         # Duplicate turn submission protection within 1.0s window
+
         recent_customer_turns = [t for t in call.transcript if t.role == SpeakerRole.CUSTOMER]
+
         if recent_customer_turns:
             last_turn = recent_customer_turns[-1]
+
             if last_turn.text.strip().lower() == message_text.strip().lower():
                 now = datetime.now(UTC)
+
                 if (now - last_turn.timestamp).total_seconds() < 1.0:
                     logger.warning(
                         "duplicate_customer_turn_ignored", call_id=call_id, text=message_text[:40]
                     )
+
                     return last_turn
 
         # Empty / whitespace-only utterance handling
+
         clean_text = message_text.strip()
+
         if not clean_text:
             clarify_turn = TranscriptTurn(
                 id=f"turn_{uuid.uuid4().hex[:8]}",
@@ -849,7 +1118,9 @@ class DemoCallService:
                 text="I didn't quite catch that. Could you please repeat or clarify your question?",
                 timestamp=datetime.now(UTC),
             )
+
             await self._record_transcript_turn(call, clarify_turn)
+
             await self.broadcast_event(
                 "transcript_turn",
                 {
@@ -857,7 +1128,9 @@ class DemoCallService:
                     "turn": clarify_turn.model_dump(mode="json"),
                 },
             )
+
             await self.transition_state(call_id, CallStatus.WAITING_FOR_CLARIFICATION)
+
             return TranscriptTurn(
                 id=f"turn_{uuid.uuid4().hex[:8]}",
                 role=SpeakerRole.CUSTOMER,
@@ -866,12 +1139,14 @@ class DemoCallService:
             )
 
         # 1. Append customer turn
+
         customer_turn = TranscriptTurn(
             id=f"turn_{uuid.uuid4().hex[:8]}",
             role=SpeakerRole.CUSTOMER,
             text=message_text,
             timestamp=datetime.now(UTC),
         )
+
         await self._record_transcript_turn(call, customer_turn)
 
         await self.broadcast_event(
@@ -883,19 +1158,23 @@ class DemoCallService:
         )
 
         # 2. Check escalation rule: customer explicitly requested a human
+
         if is_explicit_human_request(message_text):
             await self.trigger_escalation(
                 call_id=call_id,
                 reason=EscalationReason.CUSTOMER_REQUEST,
                 notes=f"Customer explicitly requested human assistance: '{message_text[:80]}'",
             )
+
             # LEO acknowledges escalation
+
             ack_turn = TranscriptTurn(
                 id=f"turn_{uuid.uuid4().hex[:8]}",
                 role=SpeakerRole.LEO,
-                text="Of course. I can't connect calls directly, but you can reach the Bitmax team through their official channels for a direct conversation.",
+                text="Of course. I can't connect calls directly, but you can reach the Global Projects team through their official channels for a direct conversation.",
                 timestamp=datetime.now(UTC),
             )
+
             await self._record_transcript_turn(call, ack_turn)
 
             await self.broadcast_event(
@@ -905,18 +1184,29 @@ class DemoCallService:
                     "turn": ack_turn.model_dump(mode="json"),
                 },
             )
+
             return customer_turn
 
         # 3. Transition to PROCESSING state while LEO RAG brain computes answer
+
         await self.transition_state(call_id, CallStatus.PROCESSING)
 
         # Resolve language and per-session context
         from app.voice.language import resolve_response_language
 
         det_lang, lang_locale = resolve_response_language(message_text, call.metadata)
+        logger.info(
+            "stage_timing",
+            request_id=req_id,
+            call_id=call_id,
+            stage="language_detection",
+            stage_name="Language detection",
+            duration_ms=round((time.perf_counter() - t_turn_start) * 1000.0, 2),
+        )
 
         # Create TurnManager agent turn token
-        agent_token = await self.turn_manager.create_agent_turn(call.session_id)
+        agent_task = asyncio.current_task()
+        agent_token = await self.turn_manager.create_agent_turn(call.session_id, task=agent_task)
 
         # 4. Invoke the real LEO RAG Orchestrator
         try:
@@ -927,6 +1217,15 @@ class DemoCallService:
                     history_messages.append(Message(role="user", content=t.text))
                 elif t.role == SpeakerRole.LEO:
                     history_messages.append(Message(role="assistant", content=t.text))
+
+            logger.info(
+                "stage_timing",
+                request_id=req_id,
+                call_id=call_id,
+                stage="conversation_history_loaded",
+                stage_name="Conversation history loaded",
+                duration_ms=round((time.perf_counter() - t_turn_start) * 1000.0, 2),
+            )
 
             orch_req = OrchChatRequest(
                 session_id=call.session_id,
@@ -941,7 +1240,12 @@ class DemoCallService:
                 llm=self._llm,
                 embeddings=self._embeddings,
                 settings=self._settings,
+                cancellation_token=agent_token,
+                request_id=req_id,
+                call_id=call_id,
             )
+            if not await self.turn_manager.is_current(call.session_id, agent_token):
+                raise asyncio.CancelledError()
             rag_duration_ms = (time.perf_counter() - t_rag_start) * 1000.0
 
             # Format sources and metadata
@@ -978,9 +1282,13 @@ class DemoCallService:
                 },
             )
 
+            # Publish only while this token still owns the session.
+            if not await self.turn_manager.is_current(call.session_id, agent_token):
+                raise asyncio.CancelledError()
             # 5. Transition to SPEAKING state (acoustic / speech visualization)
             await self.transition_state(call_id, CallStatus.SPEAKING)
-
+            if not await self.turn_manager.is_current(call.session_id, agent_token):
+                raise asyncio.CancelledError()
             await self._record_transcript_turn(call, leo_turn)
 
             await self.broadcast_event(
@@ -991,10 +1299,23 @@ class DemoCallService:
                 },
             )
 
+            # Trigger non-blocking TTS pre-warming & stage timing
+            asyncio.create_task(
+                self._prewarm_tts_turn(
+                    call_id=call_id,
+                    turn_id=leo_turn.id,
+                    text=leo_turn.text,
+                    language_code=lang_locale,
+                    request_id=req_id,
+                    turn_start_time=t_turn_start,
+                )
+            )
+
             # Return to ACTIVE state asynchronously so HTTP turn response is not blocked
             asyncio.create_task(self._reset_to_active_after_delay(call_id, delay=0.6))
 
             turn_duration_ms = (time.perf_counter() - t_turn_start) * 1000.0
+
             logger.info(
                 "timing_demo_customer_turn",
                 call_id=call_id,
@@ -1009,18 +1330,42 @@ class DemoCallService:
 
             # Complete TurnManager agent turn
             await self.turn_manager.complete_agent_turn(call.session_id, agent_token)
+            await self.turn_manager.unregister_turn_task(call.session_id, agent_task)
+
+        except asyncio.CancelledError:
+            logger.info("customer_turn_cancelled", call_id=call_id, token_id=agent_token.token_id)
+            current_task = asyncio.current_task()
+            if current_task and hasattr(current_task, "uncancel"):
+                current_task.uncancel()
+
+            await self.turn_manager.complete_agent_turn(call.session_id, agent_token)
+            await self.turn_manager.unregister_turn_task(call.session_id, agent_task)
+
+            try:
+                await self.transition_state(call_id, CallStatus.ACTIVE)
+            except Exception:
+                pass
+
+            return customer_turn
 
         except Exception as exc:
             logger.error("leo_brain_invocation_failed", call_id=call_id, error=str(exc))
+
             # Mark TurnManager complete
+
             await self.turn_manager.complete_agent_turn(call.session_id, agent_token)
+            await self.turn_manager.unregister_turn_task(call.session_id, agent_task)
+            await self.turn_manager.unregister_turn_task(call.session_id, agent_task)
 
             clean_err = str(exc)
+
             async with self._lock:
                 call.latest_error = f"AI Provider Error: {clean_err[:120]}"
+
             await self._persist_call(call)
 
             # Provide a polite, localized recovery response rather than leaving silence or transferring
+
             from app.ai.orchestrator import get_recovery_message
 
             recovery_text = get_recovery_message(message_text)
@@ -1037,6 +1382,7 @@ class DemoCallService:
                     "language_locale": lang_locale,
                 },
             )
+
             await self._record_transcript_turn(call, recovery_turn)
 
             await self.broadcast_event(
@@ -1048,6 +1394,7 @@ class DemoCallService:
             )
 
             # Transition back to ACTIVE so caller can repeat question or continue naturally
+
             await self.transition_state(call_id, CallStatus.ACTIVE)
 
         return customer_turn
@@ -1059,17 +1406,23 @@ class DemoCallService:
         notes: str | None = None,
     ) -> DemoCall:
         """Escalate call to human agent queue."""
+
         call = self.get_call(call_id)
+
         if not call:
             raise KeyError(f"Call {call_id} not found")
 
         prev_status = call.status
+
         async with self._lock:
             call.escalated = True
+
             call.escalation_reason = reason
+
             call.escalation_notes = notes or f"Call escalated due to {reason.value}."
 
         await self._persist_call(call)
+
         await self.transition_state(call_id, CallStatus.TRANSFERRING)
 
         logger.info(
@@ -1091,6 +1444,7 @@ class DemoCallService:
             text=f"[SIMULATED HANDOFF] Call routed to human specialist queue. Reason: {call.escalation_reason.value}.",
             timestamp=datetime.now(UTC),
         )
+
         await self._record_transcript_turn(call, esc_turn)
 
         await self.broadcast_event(
@@ -1107,23 +1461,31 @@ class DemoCallService:
 
     async def assign_agent(self, call_id: str, agent_id: str) -> DemoCall:
         """Assign an available human agent to an escalated call."""
+
         call = self.get_call(call_id)
+
         if not call:
             raise KeyError(f"Call {call_id} not found")
 
         async with self._lock:
             agent = self._agents.get(agent_id)
+
             if not agent:
                 raise KeyError(f"Agent {agent_id} not found")
+
             if agent.status == AgentStatus.BUSY and agent.active_call_id != call_id:
                 raise ValueError(f"Agent {agent.name} is currently busy with another call")
 
             agent.status = AgentStatus.BUSY
+
             agent.active_call_id = call_id
+
             call.assigned_agent_id = agent.agent_id
+
             call.assigned_agent_name = agent.name
 
         await self._persist_call(call)
+
         await self._persist_handoff(
             call_id=call_id,
             agent_id=agent.agent_id,
@@ -1141,6 +1503,7 @@ class DemoCallService:
             text=f"Hello, this is {agent.name} from {agent.department}. I have reviewed your conversation context with LEO and am taking over.",
             timestamp=datetime.now(UTC),
         )
+
         await self._record_transcript_turn(call, assign_turn)
 
         await self.broadcast_event(
@@ -1156,6 +1519,7 @@ class DemoCallService:
         return call
 
     def get_call(self, call_id: str) -> DemoCall | None:
+
         return self._calls.get(call_id)
 
     def list_calls(
@@ -1166,8 +1530,11 @@ class DemoCallService:
         offset: int = 0,
     ) -> list[DemoCall]:
         """List and search calls with pagination."""
+
         calls = list(self._calls.values())
+
         # Sort newest first
+
         calls.sort(key=lambda c: c.created_at, reverse=True)
 
         if status_filter:
@@ -1175,6 +1542,7 @@ class DemoCallService:
 
         if search_query:
             q = search_query.lower()
+
             calls = [
                 c
                 for c in calls
@@ -1187,18 +1555,24 @@ class DemoCallService:
         return calls[offset : offset + limit]
 
     def list_agents(self) -> list[HumanAgent]:
+
         return list(self._agents.values())
 
     def get_metrics(self) -> CallMetrics:
         """Aggregate real-time metrics across all calls."""
+
         total = len(self._calls)
+
         active = sum(
             1
             for c in self._calls.values()
             if c.status not in (CallStatus.COMPLETED, CallStatus.FAILED)
         )
+
         completed = sum(1 for c in self._calls.values() if c.status == CallStatus.COMPLETED)
+
         escalated = sum(1 for c in self._calls.values() if c.escalated)
+
         ai_handled = sum(
             1 for c in self._calls.values() if not c.escalated and c.status == CallStatus.COMPLETED
         )
@@ -1229,20 +1603,74 @@ class DemoCallService:
                 "Set TTS_PROVIDER=gemini (or mock) in your .env to enable audio synthesis."
             )
 
+        from app.voice.speech_normalizer import normalize_text_for_speech
+
+        spoken_text = normalize_text_for_speech(text, language_code=language_code)
         req = SpeechSynthesisRequest(
-            text=text,
+            text=spoken_text or text,
             voice_name=self._settings.tts_voice or "Aoede",
             language_code=language_code or self._settings.tts_language_code or "en-IN",
         )
+
         t_tts_start = time.perf_counter()
         response = await self._tts.synthesize(req)
         tts_dur_ms = (time.perf_counter() - t_tts_start) * 1000.0
+
         logger.info(
             "timing_demo_service_tts",
             duration_ms=round(tts_dur_ms, 2),
             wav_bytes=len(response.audio_data),
         )
+
         return response.audio_data
+
+    async def _prewarm_tts_turn(
+        self,
+        call_id: str,
+        turn_id: str,
+        text: str,
+        language_code: str | None,
+        request_id: str,
+        turn_start_time: float,
+    ) -> None:
+        """Asynchronously pre-warm TTS for this turn and cache generated frames."""
+        if self._tts is None or not text.strip():
+            return
+        t_tts_start = time.perf_counter()
+        dur_start = (t_tts_start - turn_start_time) * 1000.0
+        logger.info(
+            "stage_timing",
+            request_id=request_id,
+            call_id=call_id,
+            stage="tts_started",
+            stage_name="TTS started",
+            duration_ms=round(dur_start, 2),
+        )
+        frames: list[bytes] = []
+        first_chunk_logged = False
+        try:
+            async for frame in self.stream_turn_audio_framed(
+                text=text,
+                turn_id=None,
+                language_code=language_code,
+            ):
+                if not first_chunk_logged:
+                    first_chunk_logged = True
+                    audio_dur = (time.perf_counter() - turn_start_time) * 1000.0
+                    logger.info(
+                        "stage_timing",
+                        request_id=request_id,
+                        call_id=call_id,
+                        stage="tts_first_audio_chunk",
+                        stage_name="First audio chunk generated",
+                        duration_ms=round(audio_dur, 2),
+                    )
+                frames.append(frame)
+            if len(self._audio_cache) > 50:
+                self._audio_cache.pop(next(iter(self._audio_cache)))
+            self._audio_cache[turn_id] = frames
+        except Exception as exc:
+            logger.debug("prewarm_tts_turn_skipped", turn_id=turn_id, error=str(exc))
 
     async def stream_turn_audio_framed(
         self,
@@ -1264,43 +1692,68 @@ class DemoCallService:
                 "Set TTS_PROVIDER=gemini (or mock) in your .env to enable audio synthesis."
             )
 
+        # Serve from in-memory pre-warmed audio cache if available
+        if turn_id and turn_id in self._audio_cache:
+            for frame in self._audio_cache[turn_id]:
+                if cancellation_token and getattr(cancellation_token, "is_cancelled", False):
+                    break
+                yield frame
+            return
+
+        from app.voice.speech_normalizer import normalize_text_for_speech
+
+        spoken_text = normalize_text_for_speech(text, language_code=language_code)
         req = SpeechSynthesisRequest(
-            text=text,
+            text=spoken_text or text,
             voice_name=self._settings.tts_voice or "Aoede",
             language_code=language_code or self._settings.tts_language_code or "en-IN",
         )
+
         t_tts_start = time.perf_counter()
 
         # Try streaming first; fall back to non-streaming if unsupported
+
         stream_method = getattr(self._tts, "synthesize_stream_framed", None)
+
         if stream_method is not None:
             try:
                 first_byte_ms = None
+
                 async for chunk in stream_method(req, cancellation_token=cancellation_token):
                     if first_byte_ms is None:
                         first_byte_ms = (time.perf_counter() - t_tts_start) * 1000.0
+
                     yield chunk
+
                 tts_dur_ms = (time.perf_counter() - t_tts_start) * 1000.0
+
                 logger.info(
                     "timing_demo_service_tts_stream",
                     turn_id=turn_id,
                     duration_ms=round(tts_dur_ms, 2),
                     first_audio_byte_ms=round(first_byte_ms, 2) if first_byte_ms else None,
                 )
+
                 return
+
             except (AttributeError, TypeError):
                 pass  # Provider doesn't support streaming; fall through
 
         # Fallback: synthesize full audio and stream as framed chunks
+
         response = await self._tts.synthesize(req)
+
         tts_dur_ms = (time.perf_counter() - t_tts_start) * 1000.0
+
         logger.info(
             "timing_demo_service_tts_fallback",
             turn_id=turn_id,
             duration_ms=round(tts_dur_ms, 2),
             wav_bytes=len(response.audio_data),
         )
+
         # Stream as framed WAV chunks (non-progressive but compatible)
+
         from app.voice.streaming import (
             FRAME_TYPE_DONE,
             FRAME_TYPE_HEADER,
@@ -1312,9 +1765,12 @@ class DemoCallService:
         )
 
         yield pack_header(response.sample_rate, 1)
+
         chunk_size = 8192
+
         for i in range(0, len(response.audio_data), chunk_size):
             yield pack_pcm_chunk(response.audio_data[i : i + chunk_size])
+
         yield pack_done()
 
     async def stream_llm_then_tts_framed(
@@ -1327,27 +1783,49 @@ class DemoCallService:
     ) -> AsyncIterator[bytes]:
         """Full LLM\u2192TTS pipelining: stream LLM tokens, accumulate sentences, synthesize TTS.
 
+
+
         This method pipelines the LLM response through TTS synthesis sentence-by-sentence,
+
         yielding PCM audio frames as soon as the first sentence is ready from the LLM.
+
         It significantly reduces time-to-first-audio vs waiting for the full LLM response.
 
+
+
         Yields:
-          - FRAME_TYPE_TEXT frames for each sentence (0x03): transcript text chunk
-          - FRAME_TYPE_HEADER (0x01): audio sample rate / channels
-          - FRAME_TYPE_PCM (0x02): raw PCM audio chunks
-          - FRAME_TYPE_DONE (0x04): end of stream
+
+             - FRAME_TYPE_TEXT frames for each sentence (0x03): transcript text chunk
+
+             - FRAME_TYPE_HEADER (0x01): audio sample rate / channels
+
+             - FRAME_TYPE_PCM (0x02): raw PCM audio chunks
+
+             - FRAME_TYPE_DONE (0x04): end of stream
+
         """
+
         if self._tts is None:
             raise RuntimeError(
                 "TTS provider is not configured. "
                 "Set TTS_PROVIDER=gemini (or mock) in your .env to enable audio synthesis."
             )
 
+        # Serve from in-memory pre-warmed audio cache if available
+        if turn_id and turn_id in self._audio_cache:
+            for frame in self._audio_cache[turn_id]:
+                if cancellation_token and getattr(cancellation_token, "is_cancelled", False):
+                    break
+                yield frame
+            return
+
         call = self.get_call(call_id)
+
         if not call:
             raise KeyError(f"Call {call_id} not found")
 
         from app.ai.interfaces import SpeechSynthesisRequest
+
         from app.voice.streaming import (
             pack_done,
             pack_frame,
@@ -1360,18 +1838,23 @@ class DemoCallService:
         t_pipeline_start = time.perf_counter()
 
         # Build conversation history
+
         history_messages: list[Message] = []
+
         for t in call.transcript[-8:]:
             if t.metadata.get("turn_type") == "greeting":
                 continue
 
             if t.role == SpeakerRole.CUSTOMER:
                 history_messages.append(Message(role="user", content=t.text))
+
             elif t.role == SpeakerRole.LEO:
                 history_messages.append(Message(role="assistant", content=t.text))
 
         # Record customer turn in transcript if not already recorded
+
         recent_customer = [t for t in call.transcript if t.role == SpeakerRole.CUSTOMER]
+
         if (
             not recent_customer
             or recent_customer[-1].text.strip().lower() != message_text.strip().lower()
@@ -1382,7 +1865,9 @@ class DemoCallService:
                 text=message_text,
                 timestamp=datetime.now(UTC),
             )
+
             await self._record_transcript_turn(call, cust_turn)
+
             await self.broadcast_event(
                 "transcript_turn",
                 {
@@ -1406,9 +1891,13 @@ class DemoCallService:
         )
 
         stream_method = getattr(self._tts, "synthesize_stream_framed", None)
+
         full_response_text: list[str] = []
+
         header_sent = False
+
         first_audio_ms: float | None = None
+
         chat_response: OrchChatResponse | None = None
 
         try:
@@ -1419,41 +1908,60 @@ class DemoCallService:
                 settings=self._settings,
             ):
                 # Check cancellation
+
                 if cancellation_token is not None and getattr(
                     cancellation_token, "is_cancelled", False
                 ):
                     logger.info("llm_tts_pipeline_cancelled", call_id=call_id)
+
                     return
 
                 if isinstance(item, OrchChatResponse):
                     # Final metadata item — store it, do not yield audio
+
                     chat_response = item
+
                     continue
 
                 # item is a sentence string
+
                 sentence: str = item
+
                 if not sentence.strip():
                     continue
 
                 full_response_text.append(sentence)
 
                 # Transition to SPEAKING when first text is ready
+
                 if len(full_response_text) == 1:
+                    if cancellation_token is not None:
+                        marked = await self.turn_manager.mark_speaking(
+                            call.session_id, cancellation_token
+                        )
+                        if not marked:
+                            return
                     try:
                         await self.transition_state(call_id, CallStatus.SPEAKING)
                     except Exception:
                         pass
 
                 # Yield text frame so client can show transcript incrementally
+
                 yield pack_text_chunk(sentence)
 
                 # Synthesize TTS for this sentence
+
                 if stream_method is not None:
+                    from app.voice.speech_normalizer import normalize_text_for_speech
+
+                    spoken_sentence = normalize_text_for_speech(sentence, language_code=req.language_code)
                     req_s = SpeechSynthesisRequest(
-                        text=sentence,
+                        text=spoken_sentence or sentence,
                         voice_name=req.voice_name,
                         language_code=req.language_code,
                     )
+
                     try:
                         async for audio_frame in stream_method(
                             req_s, cancellation_token=cancellation_token
@@ -1462,13 +1970,19 @@ class DemoCallService:
                                 cancellation_token, "is_cancelled", False
                             ):
                                 return
+
                             # The first frame from TTS is always the header — forward it only once
+
                             if not header_sent and len(audio_frame) >= 5 and audio_frame[4] == 0x01:
                                 header_sent = True
+
                                 yield audio_frame
+
                             elif len(audio_frame) >= 5 and audio_frame[4] == 0x01:
                                 # Skip duplicate headers from subsequent sentences
+
                                 continue
+
                             else:
                                 if (
                                     first_audio_ms is None
@@ -1478,14 +1992,18 @@ class DemoCallService:
                                     first_audio_ms = (
                                         time.perf_counter() - t_pipeline_start
                                     ) * 1000.0
+
                                     logger.info(
                                         "timing_pipeline_first_audio_byte",
                                         call_id=call_id,
                                         first_audio_ms=round(first_audio_ms, 2),
                                     )
+
                                 if len(audio_frame) >= 5 and audio_frame[4] != 0x04:
                                     # Skip intermediate done frames; yield real PCM
+
                                     yield audio_frame
+
                     except Exception as tts_exc:
                         logger.warning(
                             "pipeline_tts_sentence_failed",
@@ -1496,6 +2014,7 @@ class DemoCallService:
 
         except Exception as exc:
             logger.error("stream_llm_then_tts_failed", call_id=call_id, error=str(exc))
+
             raise
 
         yield pack_done()
@@ -1503,9 +2022,12 @@ class DemoCallService:
         total_pipeline_ms = (time.perf_counter() - t_pipeline_start) * 1000.0
 
         # Record completed LEO turn in call transcript if not already added
+
         if full_response_text:
             assembled_answer = " ".join(full_response_text).strip()
+
             recent_leo = [t for t in call.transcript if t.role == SpeakerRole.LEO]
+
             if not recent_leo or recent_leo[-1].text.strip() != assembled_answer:
                 leo_turn = TranscriptTurn(
                     id=f"turn_{uuid.uuid4().hex[:8]}",
@@ -1518,7 +2040,9 @@ class DemoCallService:
                         "first_audio_ms": round(first_audio_ms, 2) if first_audio_ms else None,
                     },
                 )
+
                 await self._record_transcript_turn(call, leo_turn)
+
                 await self.broadcast_event(
                     "transcript_turn",
                     {
@@ -1529,6 +2053,7 @@ class DemoCallService:
 
         try:
             await self.transition_state(call_id, CallStatus.ACTIVE)
+
         except Exception:
             pass
 
@@ -1543,6 +2068,7 @@ class DemoCallService:
         return
 
         # Yield the assembled chat_response for callers who need it
+
         # (unreachable in streaming context but accessible via attribute after exhaustion)
 
 
@@ -1550,7 +2076,10 @@ _demo_service_instance: DemoCallService | None = None
 
 
 def get_demo_service() -> DemoCallService:
+
     global _demo_service_instance
+
     if _demo_service_instance is None:
         _demo_service_instance = DemoCallService()
+
     return _demo_service_instance

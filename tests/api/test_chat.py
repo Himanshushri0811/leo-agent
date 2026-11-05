@@ -8,7 +8,7 @@ from httpx import AsyncClient
 async def test_chat_successful_mock_response(async_client: AsyncClient) -> None:
     payload = {
         "session_id": "test_session_123",
-        "message": "What services does Bitmax Group offer?",
+        "message": "What project opportunities does Global Projects provide?",
         "conversation_history": [
             {"role": "user", "content": "Hello"},
             {"role": "assistant", "content": "Hi! How can I help you today?"},

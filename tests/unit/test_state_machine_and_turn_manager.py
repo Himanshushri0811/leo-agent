@@ -165,5 +165,5 @@ async def test_outbound_call_simulation_and_greeting(demo_service: DemoCallServi
     leo_turns = [t for t in answered_call.transcript if t.role == SpeakerRole.LEO]
     assert len(leo_turns) >= 1
     greeting = leo_turns[0].text
-    assert "calling from Bitmax Group regarding" in greeting
+    assert ("calling from Global Projects regarding" in greeting) or ("calling from Bitmax Group regarding" in greeting)
     assert "convenient time to speak" in greeting

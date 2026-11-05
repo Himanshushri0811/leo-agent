@@ -1,5 +1,5 @@
 """
-Controlled Seed Script for Verified Bitmax Group Knowledge.
+Controlled Seed Script for Verified Global Projects Knowledge.
 
 Reads verified company facts from a curated dictionary or file,
 creates KnowledgeSource records, generates embeddings, and transitions
@@ -25,38 +25,40 @@ from app.knowledge.parsing import parse_text
 
 VERIFIED_SAMPLE_KNOWLEDGE = [
     {
-        "name": "Bitmax Group - Company Overview",
-        "url": "https://bitmaxgroup.com/about",
+        "name": "Global Projects - Company Overview",
+        "url": "https://globalprojects.in/about",
         "content": (
-            "Bitmax Group is an enterprise technology solutions provider specializing in "
-            "digital transformation, cloud architecture, managed IT services, and "
-            "secure infrastructure consulting. The company works closely with enterprise "
-            "clients to modernize their mission-critical business systems with high "
-            "reliability and strict security standards."
+            "Global Projects is a professional services company specializing in "
+            "project management, business process outsourcing (BPO), and software "
+            "development. The company partners with clients across industries to "
+            "deliver end-to-end project execution, operational efficiency, and "
+            "technology-driven business solutions with a strong focus on quality "
+            "and client satisfaction."
         ),
     },
     {
-        "name": "Bitmax Group - Core Services",
-        "url": "https://bitmaxgroup.com/services",
+        "name": "Global Projects - Core Services",
+        "url": "https://globalprojects.in/services",
         "content": (
-            "Bitmax Group offers three core service pillars:\n"
-            "1. Cloud Infrastructure & DevOps: Multi-cloud migration, Kubernetes orchestration, "
-            "and continuous delivery automation.\n"
-            "2. Cybersecurity & Governance: Security posture assessments, DevSecOps integration, "
-            "and compliance auditing.\n"
-            "3. Custom Enterprise Engineering: Scalable backend architectures, API integration, "
-            "and enterprise AI enablement."
+            "Global Projects offers three core service pillars:\n"
+            "1. Project Management & Consulting: Full-cycle project planning, "
+            "execution, monitoring, and delivery management for infrastructure, "
+            "technology, and business transformation projects.\n"
+            "2. Business Process Outsourcing (BPO): Customer support operations, "
+            "back-office processing, data management, and process automation.\n"
+            "3. Software Development: Custom web and mobile application development, "
+            "system integrations, and enterprise software solutions tailored to "
+            "client requirements."
         ),
     },
     {
-        "name": "Bitmax Group - Contact & Support Channels",
-        "url": "https://bitmaxgroup.com/contact",
+        "name": "Global Projects - Contact & Support Channels",
+        "url": "https://globalprojects.in/contact",
         "content": (
-            "For customer support and business inquiries, Bitmax Group can be reached through:\n"
-            "- Business Inquiries: inquiries@bitmaxgroup.com\n"
-            "- Technical Support Portal: https://support.bitmaxgroup.com\n"
-            "- Dedicated Account Managers are assigned to enterprise contract clients for "
-            "priority incident escalation."
+            "For customer support and business inquiries, Global Projects can be reached through:\n"
+            "- Business Inquiries: Please contact the Global Projects representative assigned to your account.\n"
+            "- Support: Reach out to the Global Projects support team for project-related assistance.\n"
+            "- Dedicated project managers are assigned to clients for priority support and escalation."
         ),
     },
 ]

@@ -33,6 +33,7 @@ def create_engine() -> AsyncEngine:
         pool_size=settings.database_pool_size,
         max_overflow=settings.database_max_overflow,
         pool_pre_ping=True,
+        connect_args={"timeout": 2.0, "command_timeout": 5.0},
         echo=False,  # set True only for debugging; too verbose in production
     )
 
@@ -59,8 +60,9 @@ async def dispose_db() -> None:
 
 
 def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    global _session_factory
     if _session_factory is None:
-        raise RuntimeError("Database not initialised. Call init_db() first.")
+        init_db()
     return _session_factory
 
 

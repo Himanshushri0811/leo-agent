@@ -30,26 +30,35 @@ class MockLLMProvider:
         )
         system_msg = next((m.content for m in request.messages if m.role == "system"), "")
         passages_text = ""
-        if "--- BEGIN KNOWLEDGE PASSAGES ---" in system_msg:
-            try:
-                passages_text = system_msg.split("--- BEGIN KNOWLEDGE PASSAGES ---")[1].split(
-                    "--- END KNOWLEDGE PASSAGES ---"
-                )[0].strip()
-            except IndexError:
-                passages_text = ""
+        for begin_delim, end_delim in [
+            ("<<<BEGIN_REFERENCE_DATA>>>", "<<<END_REFERENCE_DATA>>>"),
+            ("--- BEGIN KNOWLEDGE PASSAGES ---", "--- END KNOWLEDGE PASSAGES ---"),
+        ]:
+            if begin_delim in system_msg:
+                try:
+                    passages_text = system_msg.split(begin_delim)[1].split(end_delim)[0].strip()
+                    break
+                except IndexError:
+                    passages_text = ""
 
         if passages_text and passages_text != "(none)":
             content = (
-                f"[Mock LEO response] Bitmax Group: Based on approved company knowledge, "
+                f"[Mock LEO response] Global Projects: Based on approved company knowledge, "
                 f"{passages_text[:250]}... "
-                "For support, contact inquiries@bitmaxgroup.com or visit https://support.bitmaxgroup.com."
+                "I'd be happy to help you with anything related to Global Projects."
             )
         else:
-            content = (
-                "[Mock LEO response] I don't currently have detailed information on that topic in "
-                "Bitmax Group's approved knowledge base. Please contact our team directly at "
-                "inquiries@bitmaxgroup.com or visit https://support.bitmaxgroup.com."
-            )
+            if "bitmax" in last_user.lower():
+                content = (
+                    "[Mock LEO response] I'm sorry, but I can assist only with Global Projects-related queries. "
+                    "I'd be happy to help you with anything related to Global Projects."
+                )
+            else:
+                content = (
+                    "[Mock LEO response] I don't currently have verified information about that in my "
+                    "Global Projects knowledge base. Could you please clarify your question or contact the "
+                    "appropriate Global Projects representative?"
+                )
 
         return GenerationResponse(
             content=content,

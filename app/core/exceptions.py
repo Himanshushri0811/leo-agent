@@ -7,10 +7,12 @@ Stack traces and internal details are never exposed to API consumers.
 
 from __future__ import annotations
 
+import asyncio
+import traceback
 import uuid
 from typing import Any
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 
 from app.core.logging import get_logger
@@ -99,12 +101,30 @@ async def leo_exception_handler(request: Request, exc: LeoBaseError) -> JSONResp
     )
 
 
-async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def unhandled_exception_handler(request: Request, exc: Exception) -> Response:
     error_id = str(uuid.uuid4())
-    logger.exception(
+    error_msg = str(exc)[:300]
+    path_str = str(request.url.path)
+
+    # Handle client disconnect or barge-in task cancellation cleanly without 500
+    if isinstance(exc, asyncio.CancelledError) or "No response returned" in error_msg:
+        logger.info(
+            "request_cancelled_or_interrupted",
+            error_id=error_id,
+            path=path_str,
+            reason=error_msg,
+        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    # Use safe logging with exc_info=False to avoid rich.traceback recursion errors on Starlette ExceptionGroups
+    short_tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__, limit=5))[-500:]
+    logger.error(
         "unhandled_exception",
         error_id=error_id,
-        path=str(request.url.path),
+        error_type=type(exc).__name__,
+        message=error_msg,
+        path=path_str,
+        traceback_snippet=short_tb,
     )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

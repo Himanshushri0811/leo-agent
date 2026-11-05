@@ -25,7 +25,7 @@ def test_create_mock_wav_valid_header() -> None:
 async def test_mock_tts_provider_synthesizes_playable_audio() -> None:
     tts = MockTTSProvider(sample_rate=24000)
     req = SpeechSynthesisRequest(
-        text="Welcome to Bitmax Group. How can I help you today?",
+        text="Welcome to Global Projects. How can I help you today?",
         voice_name="Aoede",
         language_code="en-IN",
     )
@@ -57,7 +57,7 @@ async def test_mock_stt_provider_transcription() -> None:
     res = await stt.transcribe(req)
     assert res.provider == "mock"
     assert res.confidence > 0.90
-    assert "Bitmax Group" in res.text
+    assert "Global Projects" in res.text
     assert res.detected_language == "en-IN"
 
 

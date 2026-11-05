@@ -41,13 +41,13 @@ async def test_conversation_persistence_flow():
             msg1 = await repo.add_message(
                 conversation_id=conv_id,
                 role="user",
-                content="What services does Bitmax provide?",
+                content="What services does Global Projects provide?",
                 token_count=8,
             )
             msg2 = await repo.add_message(
                 conversation_id=conv_id,
                 role="assistant",
-                content="Bitmax provides enterprise AI solutions.",
+                content="Global Projects provides enterprise AI solutions.",
                 token_count=7,
             )
             await session.commit()
@@ -58,9 +58,9 @@ async def test_conversation_persistence_flow():
             history = await repo.get_recent_messages(test_session_id, limit=10)
             assert len(history) == 2
             assert history[0].role == "user"
-            assert history[0].content == "What services does Bitmax provide?"
+            assert history[0].content == "What services does Global Projects provide?"
             assert history[1].role == "assistant"
-            assert history[1].content == "Bitmax provides enterprise AI solutions."
+            assert history[1].content == "Global Projects provides enterprise AI solutions."
 
             # Verify session isolation: another session gets no messages
             empty_history = await repo.get_recent_messages("non_existent_session_999", limit=10)

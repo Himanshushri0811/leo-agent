@@ -13,6 +13,7 @@ from typing import Any
 import uuid
 
 from sqlalchemy import desc, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -129,56 +130,79 @@ class DemoCallRepository:
 
     async def save_call(self, call: DemoCall) -> DemoCallRecord:
         """Create or update a DemoCall record in the database."""
-        record = await self.get_call_record(call.call_id)
         meta = dict(call.metadata or {})
         meta["direction"] = str(call.direction)
         meta["turn_state"] = str(call.turn_state)
 
-        if record is None:
-            record = DemoCallRecord(
-                id=call.call_id,
-                session_id=call.session_id,
-                caller_id=call.caller_id,
-                caller_name=call.caller_name,
-                caller_phone_masked=call.caller_phone_masked,
-                status=str(call.status),
-                is_muted=call.is_muted,
-                is_simulated=call.is_simulated,
-                auto_answer_delay_sec=call.auto_answer_delay_sec,
-                created_at=call.created_at,
-                connected_at=call.connected_at,
-                ended_at=call.ended_at,
-                duration_seconds=call.duration_seconds,
-                escalated=call.escalated,
-                escalation_reason=str(call.escalation_reason) if call.escalation_reason else None,
-                escalation_notes=call.escalation_notes,
-                assigned_agent_id=call.assigned_agent_id,
-                assigned_agent_name=call.assigned_agent_name,
-                latest_error=call.latest_error,
-                call_metadata=meta,
-            )
-            self._session.add(record)
-        else:
-            record.session_id = call.session_id
-            record.caller_name = call.caller_name
-            record.caller_phone_masked = call.caller_phone_masked
-            record.status = str(call.status)
-            record.is_muted = call.is_muted
-            record.is_simulated = call.is_simulated
-            record.auto_answer_delay_sec = call.auto_answer_delay_sec
-            record.connected_at = call.connected_at
-            record.ended_at = call.ended_at
-            record.duration_seconds = call.duration_seconds
-            record.escalated = call.escalated
-            record.escalation_reason = str(call.escalation_reason) if call.escalation_reason else None
-            record.escalation_notes = call.escalation_notes
-            record.assigned_agent_id = call.assigned_agent_id
-            record.assigned_agent_name = call.assigned_agent_name
-            record.latest_error = call.latest_error
-            record.call_metadata = meta
+        insert_values = {
+            "id": call.call_id,
+            "session_id": call.session_id,
+            "caller_id": call.caller_id,
+            "caller_name": call.caller_name,
+            "caller_phone_masked": call.caller_phone_masked,
+            "status": str(call.status),
+            "is_muted": call.is_muted,
+            "is_simulated": call.is_simulated,
+            "auto_answer_delay_sec": call.auto_answer_delay_sec,
+            "created_at": call.created_at,
+            "connected_at": call.connected_at,
+            "ended_at": call.ended_at,
+            "duration_seconds": call.duration_seconds,
+            "escalated": call.escalated,
+            "escalation_reason": str(call.escalation_reason) if call.escalation_reason else None,
+            "escalation_notes": call.escalation_notes,
+            "assigned_agent_id": call.assigned_agent_id,
+            "assigned_agent_name": call.assigned_agent_name,
+            "latest_error": call.latest_error,
+            "metadata": meta,
+        }
 
+        table = DemoCallRecord.__table__
+        stmt = pg_insert(table).values(**insert_values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[table.c.id],
+            set_={
+                "session_id": stmt.excluded.session_id,
+                "caller_name": stmt.excluded.caller_name,
+                "caller_phone_masked": stmt.excluded.caller_phone_masked,
+                "status": stmt.excluded.status,
+                "is_muted": stmt.excluded.is_muted,
+                "is_simulated": stmt.excluded.is_simulated,
+                "auto_answer_delay_sec": stmt.excluded.auto_answer_delay_sec,
+                "connected_at": stmt.excluded.connected_at,
+                "ended_at": stmt.excluded.ended_at,
+                "duration_seconds": stmt.excluded.duration_seconds,
+                "escalated": stmt.excluded.escalated,
+                "escalation_reason": stmt.excluded.escalation_reason,
+                "escalation_notes": stmt.excluded.escalation_notes,
+                "assigned_agent_id": stmt.excluded.assigned_agent_id,
+                "assigned_agent_name": stmt.excluded.assigned_agent_name,
+                "latest_error": stmt.excluded.latest_error,
+                "metadata": stmt.excluded.metadata,
+            },
+        )
+        await self._session.execute(stmt)
         await self._session.flush()
-        return record
+
+        if call.transcript:
+            t_table = DemoCallTranscriptRecord.__table__
+            for idx, turn in enumerate(call.transcript):
+                t_stmt = pg_insert(t_table).values(
+                    id=turn.id,
+                    call_id=call.call_id,
+                    turn_index=idx,
+                    role=str(turn.role),
+                    text=turn.text,
+                    timestamp=turn.timestamp,
+                    confidence_score=turn.confidence_score,
+                    sources=turn.sources or [],
+                    metadata=turn.metadata or {},
+                ).on_conflict_do_nothing(index_elements=[t_table.c.id])
+                await self._session.execute(t_stmt)
+            await self._session.flush()
+
+        record = await self.get_call_record(call.call_id)
+        return record  # type: ignore[return-value]
 
     async def add_transcript_turn(
         self,
@@ -187,13 +211,8 @@ class DemoCallRepository:
         turn_index: int,
     ) -> DemoCallTranscriptRecord:
         """Persist a single transcript message for a call."""
-        # Ensure parent call exists or is flushed
-        stmt = select(DemoCallTranscriptRecord).where(DemoCallTranscriptRecord.id == turn.id)
-        existing = (await self._session.execute(stmt)).scalar_one_or_none()
-        if existing:
-            return existing
-
-        record = DemoCallTranscriptRecord(
+        t_table = DemoCallTranscriptRecord.__table__
+        t_stmt = pg_insert(t_table).values(
             id=turn.id,
             call_id=call_id,
             turn_index=turn_index,
@@ -202,11 +221,13 @@ class DemoCallRepository:
             timestamp=turn.timestamp,
             confidence_score=turn.confidence_score,
             sources=turn.sources or [],
-            turn_metadata=turn.metadata or {},
-        )
-        self._session.add(record)
+            metadata=turn.metadata or {},
+        ).on_conflict_do_nothing(index_elements=[t_table.c.id])
+        await self._session.execute(t_stmt)
         await self._session.flush()
-        return record
+
+        stmt = select(DemoCallTranscriptRecord).where(DemoCallTranscriptRecord.id == turn.id)
+        return (await self._session.execute(stmt)).scalar_one()
 
     async def record_handoff(
         self,
