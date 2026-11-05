@@ -64,7 +64,7 @@ async def test_gemini_llm_generate_success(gemini_settings: Settings) -> None:
     provider = GeminiLLMProvider(gemini_settings)
 
     mock_response = MagicMock()
-    mock_response.text = "Hello! I am LEO representing Bitmax Group."
+    mock_response.text = "Hello! I am LEO representing Global Projects."
     mock_response.usage_metadata.prompt_token_count = 15
     mock_response.usage_metadata.candidates_token_count = 10
     mock_candidate = MagicMock()
@@ -84,7 +84,7 @@ async def test_gemini_llm_generate_success(gemini_settings: Settings) -> None:
         )
         response = await provider.generate(request)
 
-        assert response.content == "Hello! I am LEO representing Bitmax Group."
+        assert response.content == "Hello! I am LEO representing Global Projects."
         assert response.model == "gemini-2.5-flash"
         assert response.prompt_tokens == 15
         assert response.completion_tokens == 10
@@ -98,9 +98,9 @@ async def test_gemini_llm_generate_stream_success(gemini_settings: Settings) -> 
     provider = GeminiLLMProvider(gemini_settings)
 
     chunk1 = MagicMock()
-    chunk1.text = "Bitmax "
+    chunk1.text = "Global "
     chunk2 = MagicMock()
-    chunk2.text = "Group"
+    chunk2.text = "Projects"
 
     async def mock_stream_gen(*args, **kwargs):
         yield chunk1
@@ -114,7 +114,7 @@ async def test_gemini_llm_generate_stream_success(gemini_settings: Settings) -> 
         request = GenerationRequest(messages=[Message(role="user", content="Hi")])
         stream = provider.generate_stream(request)
         chunks = [c async for c in stream]
-        assert chunks == ["Bitmax ", "Group"]
+        assert chunks == ["Global ", "Projects"]
 
 
 @pytest.mark.asyncio
@@ -251,7 +251,7 @@ async def test_gemini_embeddings_embed_sdk_response_structure(gemini_settings: S
         "embed_content",
         new=AsyncMock(return_value=sdk_resp),
     ):
-        req = EmbeddingRequest(texts=["What services does Bitmax offer?"])
+        req = EmbeddingRequest(texts=["What project opportunities does Global Projects offer?"])
         res = await provider.embed(req)
 
         assert len(res.embeddings) == 1

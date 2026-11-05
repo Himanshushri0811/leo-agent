@@ -47,7 +47,7 @@ async def test_1_normal_english_company_question(demo_service: DemoCallService) 
 
     turn = await demo_service.send_customer_message(
         call.call_id,
-        "What enterprise services does Bitmax Group offer?",
+        "What project management services does Global Projects offer?",
     )
     assert turn.role == SpeakerRole.CUSTOMER
     updated = demo_service.get_call(call.call_id)
@@ -89,7 +89,7 @@ async def test_3_hinglish_question(demo_service: DemoCallService) -> None:
 
     turn = await demo_service.send_customer_message(
         call.call_id,
-        "Bitmax Group cloud services ke baare mein batao",
+        "Global Projects services ke baare mein batao",
     )
     assert turn.role == SpeakerRole.CUSTOMER
     updated = demo_service.get_call(call.call_id)
@@ -172,7 +172,7 @@ async def test_6_streaming_failure_and_supported_fallback() -> None:
                 provider="test",
             )
 
-    req = orchestrator.ChatRequest(session_id="s_test", user_message="Tell me about Bitmax")
+    req = orchestrator.ChatRequest(session_id="s_test", user_message="Tell me about Global Projects")
     settings = MagicMock(llm_max_tokens=100, llm_temperature=0.2)
 
     with patch("app.ai.orchestrator.retrieve_relevant_chunks", AsyncMock(return_value=[])):
@@ -193,8 +193,8 @@ async def test_7_one_user_turn_submitted_twice(demo_service: DemoCallService) ->
     call = await demo_service.simulate_incoming_call(auto_answer_delay_sec=0)
     await demo_service.execute_call_action(call.call_id, CallActionType.ANSWER)
 
-    turn1 = await demo_service.send_customer_message(call.call_id, "What is Bitmax?")
-    turn2 = await demo_service.send_customer_message(call.call_id, "What is Bitmax?")
+    turn1 = await demo_service.send_customer_message(call.call_id, "What is Global Projects?")
+    turn2 = await demo_service.send_customer_message(call.call_id, "What is Global Projects?")
 
     updated = demo_service.get_call(call.call_id)
     # Deduplication ensures second identical immediate submission returns previous turn
@@ -202,7 +202,7 @@ async def test_7_one_user_turn_submitted_twice(demo_service: DemoCallService) ->
     # Should not produce extra duplicate customer turns
     customer_turns = [
         t for t in updated.transcript
-        if t.role == SpeakerRole.CUSTOMER and t.text == "What is Bitmax?"
+        if t.role == SpeakerRole.CUSTOMER and t.text == "What is Global Projects?"
     ]
     assert len(customer_turns) == 1
 
@@ -235,7 +235,7 @@ async def test_9_normal_conversation_without_unwanted_transfer(
     updated = demo_service.get_call(call.call_id)
     assert updated.escalated is False
 
-    await demo_service.send_customer_message(call.call_id, "What cloud services does Bitmax offer?")
+    await demo_service.send_customer_message(call.call_id, "What project services does Global Projects offer?")
     updated = demo_service.get_call(call.call_id)
     assert updated.escalated is False
     assert updated.status != CallStatus.TRANSFERRING
@@ -292,11 +292,11 @@ async def test_11_barge_in_while_assistant_speaking() -> None:
 async def test_12_empty_knowledge_retrieval() -> None:
     from app.ai.prompts.system import build_system_prompt
 
-    # Empty retrieval must still inject verified Bitmax core profile
+    # Empty retrieval must still inject verified Global Projects core profile
     prompt = build_system_prompt("")
-    assert "Bitmax Group" in prompt
-    assert ("Cloud infrastructure and DevOps" in prompt or "Cloud Infrastructure & DevOps" in prompt)
-    assert ("Cybersecurity and governance" in prompt or "Cybersecurity & Governance" in prompt)
+    assert "Global Projects" in prompt
+    assert ("Project management" in prompt or "project management" in prompt or "Project Management" in prompt)
+    assert ("BPO" in prompt or "Business Process" in prompt or "business process" in prompt)
 
 
 # 13. TTS failure after a valid text response

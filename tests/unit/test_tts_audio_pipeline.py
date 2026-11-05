@@ -188,7 +188,7 @@ async def test_gemini_tts_synthesize_passes_only_dialogue_without_preamble() -> 
         "generate_content",
         new=mock_generate_content,
     ):
-        dialogue_text = "Bitmax Group provides cloud infrastructure and DevOps consulting."
+        dialogue_text = "Global Projects provides project management and BPO consulting."
         req = SpeechSynthesisRequest(
             text=dialogue_text,
             language_code="en-IN",

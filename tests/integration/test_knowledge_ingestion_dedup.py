@@ -36,9 +36,9 @@ async def test_ingest_deduplication_returns_existing_source_id():
     session.execute.return_value = mock_result
 
     result = await _ingest(
-        text="Bitmax Group enterprise knowledge sample.",
+        text="Global Projects enterprise knowledge sample.",
         content_hash="test_sha256_hash_12345",
-        name="Bitmax Duplicate Test Doc",
+        name="Global Projects Duplicate Test Doc",
         source_type="text",
         source_url=None,
         session=session,

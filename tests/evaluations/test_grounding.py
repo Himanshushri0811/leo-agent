@@ -12,8 +12,8 @@ def test_format_passages_includes_citations() -> None:
         RetrievalResult(
             chunk_id=uuid.uuid4(),
             source_name="Company Overview",
-            source_url="https://bitmaxgroup.com/about",
-            content="Bitmax Group provides cloud solutions.",
+            source_url="https://globalprojects.in/about",
+            content="Global Projects provides project management solutions.",
             similarity_score=0.92,
             chunk_index=0,
         ),
@@ -28,8 +28,8 @@ def test_format_passages_includes_citations() -> None:
     ]
 
     formatted = _format_passages(results)
-    assert "[1] (Source: https://bitmaxgroup.com/about)" in formatted
-    assert "Bitmax Group provides cloud solutions." in formatted
+    assert "[1] (Source: https://globalprojects.in/about)" in formatted
+    assert "Global Projects provides project management solutions." in formatted
     assert "[2] (Source: Services Guide)" in formatted
     assert "We offer managed Kubernetes." in formatted
 

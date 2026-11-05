@@ -159,7 +159,7 @@ async def test_customer_turn_and_ai_response(demo_service: DemoCallService) -> N
     leo_turns = [t for t in updated_call.transcript if t.role == SpeakerRole.LEO]
     assert len(leo_turns) >= 2  # initial greeting + answer
     last_turn = leo_turns[-1]
-    assert "Bitmax" in last_turn.text or "Mock LEO response" in last_turn.text
+    assert "Global Projects" in last_turn.text or "Mock LEO response" in last_turn.text
 
 
 @pytest.mark.asyncio

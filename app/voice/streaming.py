@@ -98,14 +98,15 @@ class TurnTiming:
 class SentenceAccumulator:
     """Accumulates LLM token chunks and splits them into speakable sentences/phrases.
 
-    Splits on sentence-ending punctuation (.!?) followed by whitespace,
-    and also enforces a maximum phrase length to avoid overly long TTS inputs.
+    Splits on sentence-ending punctuation (.!? and Indic । ॥) followed by whitespace,
+    with decimal and abbreviation protection. Enforces a balanced phrase length
+    to avoid overly short fragmented audio or excessively long TTS inputs.
     """
 
-    def __init__(self, max_phrase_chars: int = 120) -> None:
+    def __init__(self, max_phrase_chars: int = 220) -> None:
         self._buffer = ""
         self._max_phrase_chars = max_phrase_chars
-        self._sentence_endings = (".", "!", "?")
+        self._sentence_endings = (".", "!", "?", "।", "॥")
 
     def add(self, token: str) -> list[str]:
         """Add a token and return any completed sentences/phrases."""
@@ -134,11 +135,27 @@ class SentenceAccumulator:
 
         for i, char in enumerate(self._buffer):
             if char in self._sentence_endings:
+                # Indic danda / double-danda is always a sentence boundary
+                if char in ("।", "॥"):
+                    sentence = self._buffer[: i + 1].strip()
+                    self._buffer = self._buffer[i + 1 :]
+                    return sentence
+
+                # Protection against splitting decimal numbers (e.g. 7.60 lakh, 8.5%)
+                if char == "." and i > 0 and self._buffer[i - 1].isdigit():
+                    if i + 1 < len(self._buffer) and self._buffer[i + 1].isdigit():
+                        continue
+
+                # Protection against single-letter abbreviations (e.g. B. P. O.)
+                if char == "." and i > 0 and self._buffer[i - 1].isupper():
+                    if i + 2 < len(self._buffer) and self._buffer[i + 1] in (" ", ".") and self._buffer[i + 2].isupper():
+                        continue
+
                 if i + 1 >= len(self._buffer):
                     # Punctuation at end of buffer — wait for more tokens
                     return None
                 next_char = self._buffer[i + 1]
-                if next_char in (" ", "\n", "\t", '"', "'"):
+                if next_char in (" ", "\n", "\t", '"', "'", "\r"):
                     sentence = self._buffer[: i + 1].strip()
                     self._buffer = self._buffer[i + 1 :]
                     return sentence
@@ -147,8 +164,8 @@ class SentenceAccumulator:
 
     def _find_split_point(self) -> int:
         """Find a good split point for long phrases (prefer comma, semicolon, space)."""
-        search_start = max(0, self._max_phrase_chars - 40)
-        search_end = min(len(self._buffer), self._max_phrase_chars + 40)
+        search_start = max(0, self._max_phrase_chars - 50)
+        search_end = min(len(self._buffer), self._max_phrase_chars + 30)
         region = self._buffer[search_start:search_end]
 
         for sep in (";", ",", " "):

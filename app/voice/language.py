@@ -28,6 +28,7 @@ class SupportedLanguage(StrEnum):
     TELUGU = "te"
     KANNADA = "kn"
     MALAYALAM = "ml"
+    BENGALI = "bn"
 
 
 # Verified locale tags for ASR & TTS providers
@@ -39,11 +40,13 @@ LANGUAGE_LOCALE_MAP: dict[SupportedLanguage, str] = {
     SupportedLanguage.TELUGU: "te-IN",
     SupportedLanguage.KANNADA: "kn-IN",
     SupportedLanguage.MALAYALAM: "ml-IN",
+    SupportedLanguage.BENGALI: "bn-IN",
 }
 
 # Unicode script ranges for Indian languages
 _SCRIPT_PATTERNS = {
     SupportedLanguage.HINDI: re.compile(r"[\u0900-\u097F]"),
+    SupportedLanguage.BENGALI: re.compile(r"[\u0980-\u09FF]"),
     SupportedLanguage.TAMIL: re.compile(r"[\u0B80-\u0BFF]"),
     SupportedLanguage.TELUGU: re.compile(r"[\u0C00-\u0C7F]"),
     SupportedLanguage.KANNADA: re.compile(r"[\u0C80-\u0CFF]"),

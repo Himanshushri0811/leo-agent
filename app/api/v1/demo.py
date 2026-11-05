@@ -20,7 +20,10 @@ import asyncio
 import json
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import time
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import Response, StreamingResponse
 
 from app.core.config import get_settings
@@ -97,13 +100,17 @@ async def simulate_outbound_call(
     description="Retrieve list of calls with status filter, search query, and pagination.",
 )
 async def list_calls(
-    status: str | None = Query(None, description="Filter by status (ringing, active, completed, etc.)"),
-    search: str | None = Query(None, description="Search query across caller, ID, phone, or transcript"),
+    status: str | None = Query(
+        None, description="Filter by status (ringing, active, completed, etc.)"
+    ),
+    search: str | None = Query(
+        None, description="Search query across caller, ID, phone, or transcript"
+    ),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     demo_service: DemoCallService = Depends(get_demo_service),
 ) -> list[DemoCall]:
-    return demo_service.list_calls(
+    return await demo_service.get_calls_async(
         status_filter=status,
         search_query=search,
         limit=limit,
@@ -122,7 +129,9 @@ async def get_call(
 ) -> DemoCall:
     call = await demo_service.get_or_load_call(call_id)
     if not call:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found."
+        )
     return call
 
 
@@ -144,7 +153,9 @@ async def execute_action(
             reason=body.reason,
         )
     except KeyError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found."
+        )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
@@ -158,17 +169,59 @@ async def execute_action(
 async def send_message(
     call_id: str,
     body: SendCustomerMessageRequest,
+    request: Request,
     demo_service: DemoCallService = Depends(get_demo_service),
 ) -> TranscriptTurn:
+    t_req_start = time.perf_counter()
+    req_id = getattr(request.state, "request_id", None) or str(uuid.uuid4())
+
+    logger.info(
+        "stage_timing",
+        request_id=req_id,
+        call_id=call_id,
+        stage="request_received",
+        stage_name="Request received",
+        duration_ms=0.0,
+    )
+
     try:
-        return await demo_service.send_customer_message(
+        turn = await demo_service.send_customer_message(
             call_id=call_id,
             message_text=body.message,
+            request_id=req_id,
         )
+        total_duration_ms = (time.perf_counter() - t_req_start) * 1000.0
+        logger.info(
+            "stage_timing",
+            request_id=req_id,
+            call_id=call_id,
+            stage="final_response_sent",
+            stage_name="Final response sent",
+            duration_ms=round(total_duration_ms, 2),
+        )
+        return turn
     except KeyError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found."
+        )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except asyncio.CancelledError:
+        current_task = asyncio.current_task()
+        if current_task and hasattr(current_task, "uncancel"):
+            current_task.uncancel()
+        call = demo_service.get_call(call_id)
+        if call and call.transcript:
+            recent_cust = [t for t in call.transcript if t.role == SpeakerRole.CUSTOMER]
+            if recent_cust:
+                return recent_cust[-1]
+        from datetime import UTC, datetime
+        return TranscriptTurn(
+            id=f"turn_{uuid.uuid4().hex[:8]}",
+            role=SpeakerRole.CUSTOMER,
+            text=body.message,
+            timestamp=datetime.now(UTC),
+        )
 
 
 @router.post(
@@ -189,7 +242,9 @@ async def escalate_call(
             notes=body.notes,
         )
     except KeyError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found."
+        )
 
 
 @router.get(
@@ -234,7 +289,7 @@ async def assign_agent(
 async def get_metrics(
     demo_service: DemoCallService = Depends(get_demo_service),
 ) -> CallMetrics:
-    return demo_service.get_metrics()
+    return await demo_service.get_metrics_async()
 
 
 @router.api_route(
@@ -268,12 +323,17 @@ async def synthesize_turn_audio(
     """
     call = await demo_service.get_or_load_call(call_id)
     if not call:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found."
+        )
 
     # Find the requested turn in the transcript
     turn = next((t for t in call.transcript if t.id == turn_id), None)
     if not turn:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Turn '{turn_id}' not found in call '{call_id}'.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Turn '{turn_id}' not found in call '{call_id}'.",
+        )
 
     if turn.role != SpeakerRole.LEO:
         raise HTTPException(
@@ -288,7 +348,9 @@ async def synthesize_turn_audio(
         lang_code = turn.metadata.get("language_locale") or call.metadata.get("language_locale")
         wav_bytes = await demo_service.synthesize_turn_audio(turn.text, language_code=lang_code)
     except Exception as exc:
-        logger.error("tts_synthesis_endpoint_failed", call_id=call_id, turn_id=turn_id, error=str(exc))
+        logger.error(
+            "tts_synthesis_endpoint_failed", call_id=call_id, turn_id=turn_id, error=str(exc)
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"TTS synthesis failed: {str(exc)}",
@@ -309,67 +371,47 @@ async def synthesize_turn_audio(
 @router.api_route(
     "/calls/{call_id}/turns/{turn_id}/audio-stream",
     methods=["GET", "POST"],
-    summary="Stream LEO audio progressively",
-    description=(
-        "Streams TTS audio as framed raw PCM chunks so the browser can begin "
-        "playback before the entire answer is generated. Falls back to the "
-        "non-streaming endpoint if streaming is unavailable."
-    ),
+    summary="Stream audio for an existing LEO transcript turn",
     response_class=StreamingResponse,
-    responses={
-        200: {"content": {"application/octet-stream": {}}, "description": "Framed PCM audio stream"},
-        404: {"description": "Call or turn not found"},
-        400: {"description": "Turn is not a LEO turn or call not active"},
-        503: {"description": "TTS provider unavailable or synthesis failed"},
-    },
 )
 async def stream_turn_audio(
     call_id: str,
     turn_id: str,
     demo_service: DemoCallService = Depends(get_demo_service),
 ) -> StreamingResponse:
-    """Stream TTS audio as framed PCM chunks for progressive playback."""
     call = await demo_service.get_or_load_call(call_id)
     if not call:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found.")
-
+        raise HTTPException(status_code=404, detail=f"Call '{call_id}' not found.")
     turn = next((t for t in call.transcript if t.id == turn_id), None)
     if not turn:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Turn '{turn_id}' not found in call '{call_id}'.")
-
+        raise HTTPException(status_code=404, detail=f"Turn '{turn_id}' not found.")
     if turn.role != SpeakerRole.LEO:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Turn '{turn_id}' is role '{turn.role}', not 'leo'. Only LEO turns can be synthesized.",
-        )
-
+        raise HTTPException(status_code=400, detail="Only LEO turns can be synthesized.")
     if not turn.text or not turn.text.strip():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Turn text is empty.")
+        raise HTTPException(status_code=400, detail="Turn text is empty.")
 
-    cancellation_token = await demo_service.turn_manager.get_token(call.session_id)
     lang_code = turn.metadata.get("language_locale") or call.metadata.get("language_locale")
 
     async def audio_stream():
         try:
-            async for chunk in demo_service.stream_turn_audio_framed(
-                turn.text,
-                turn_id=turn_id,
-                cancellation_token=cancellation_token,
-                language_code=lang_code,
+            async for frame in demo_service.stream_turn_audio_framed(
+                turn.text, turn_id=turn_id, language_code=lang_code
             ):
-                yield chunk
+                yield frame
+        except asyncio.CancelledError:
+            raise
         except Exception as exc:
-            logger.error("tts_stream_endpoint_failed", call_id=call_id, turn_id=turn_id, error=str(exc))
+            logger.error(
+                "tts_stream_endpoint_failed", call_id=call_id, turn_id=turn_id, error=str(exc)
+            )
 
     return StreamingResponse(
         audio_stream(),
         media_type="application/octet-stream",
         headers={
-            "Content-Disposition": f'inline; filename="leo_turn_{turn_id}.pcm"',
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
             "X-LEO-Turn-Id": turn_id,
-            "X-LEO-TTS-Provider": "gemini",
             "X-LEO-Streaming": "true",
         },
     )
@@ -388,7 +430,9 @@ async def barge_in(
     try:
         return await demo_service.handle_barge_in(call_id, reason="user_barge_in")
     except KeyError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found."
+        )
 
 
 @router.get(
@@ -409,78 +453,62 @@ async def get_tts_config() -> dict:
 
 @router.post(
     "/calls/{call_id}/live-stream",
-    summary="Ultra-low-latency LLM→TTS pipeline stream",
-    description=(
-        "Accepts the customer message and immediately begins LLM inference with TTS synthesis "
-        "sentence-by-sentence. Returns a framed binary stream with TEXT (0x03), HEADER (0x01), "
-        "PCM (0x02), and DONE (0x04) frames interleaved. First audio arrives in ~700–1200ms. "
-        "Also broadcasts transcript_turn SSE event with the full response once LLM completes."
-    ),
+    summary="Cancellable LLM-to-TTS live stream",
     response_class=StreamingResponse,
-    responses={
-        200: {"content": {"application/octet-stream": {}}, "description": "Framed LLM+PCM stream"},
-        404: {"description": "Call not found"},
-        400: {"description": "Call not active or message empty"},
-        503: {"description": "TTS/LLM provider unavailable"},
-    },
 )
 async def live_stream_response(
     call_id: str,
     body: SendCustomerMessageRequest,
     demo_service: DemoCallService = Depends(get_demo_service),
 ) -> StreamingResponse:
-    """
-    Pipeline: customer message → LLM token stream → SentenceAccumulator → TTS framed PCM.
-
-    The client connects immediately after sending the message; there is no need to wait
-    for the SSE transcript_turn event before requesting audio.
-    """
     call = await demo_service.get_or_load_call(call_id)
     if not call:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call '{call_id}' not found.")
-
+        raise HTTPException(status_code=404, detail=f"Call '{call_id}' not found.")
     message_text = (body.message or "").strip()
     if not message_text:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Message text is empty.")
+        raise HTTPException(status_code=400, detail="Message text is empty.")
 
-    from app.schemas.demo import CallStatus, SpeakerRole
+    from app.schemas.demo import CallStatus
+
     if call.status in (CallStatus.COMPLETED, CallStatus.FAILED, CallStatus.CALL_ENDING):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot stream to finished call ({call.status}).",
+            status_code=400, detail=f"Cannot stream to finished call ({call.status})."
         )
-
-    # Resolve language for TTS
     from app.voice.language import resolve_response_language
-    _det_lang, lang_locale = resolve_response_language(message_text, call.metadata)
 
-    # Get the current cancellation token for barge-in support
-    cancellation_token = await demo_service.turn_manager.get_token(call.session_id)
+    _, lang_locale = resolve_response_language(message_text, call.metadata)
 
     async def pipeline_stream():
+        task = asyncio.current_task()
+        token = await demo_service.turn_manager.create_agent_turn(call.session_id, task=task)
         try:
             async for frame in demo_service.stream_llm_then_tts_framed(
                 call_id=call_id,
                 message_text=message_text,
-                cancellation_token=cancellation_token,
+                cancellation_token=token,
                 language_code=lang_locale,
             ):
+                if token.is_cancelled:
+                    break
                 yield frame
-        except KeyError:
-            pass
+        except asyncio.CancelledError:
+            logger.info("live_stream_task_cancelled", call_id=call_id, token_id=token.token_id)
+            raise
         except Exception as exc:
             logger.error("live_stream_pipeline_failed", call_id=call_id, error=str(exc))
+            raise
+        finally:
+            await demo_service.turn_manager.complete_agent_turn(call.session_id, token)
+            await demo_service.turn_manager.unregister_turn_task(call.session_id, task)
 
     return StreamingResponse(
         pipeline_stream(),
         media_type="application/octet-stream",
         headers={
-            "Content-Disposition": f'inline; filename="leo_live_{call_id}.pcm"',
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
             "X-LEO-Call-Id": call_id,
             "X-LEO-Streaming": "live",
-            "X-LEO-TTS-Provider": "gemini",
         },
     )
 

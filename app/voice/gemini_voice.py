@@ -144,10 +144,14 @@ class GeminiTTSProvider:
                 prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)
             )
         )
+        # NOTE: ThinkingConfig is intentionally NOT passed to TTS models.
+        # Gemini TTS models (gemini-*-tts) reject thinking_config with HTTP 400
+        # INVALID_ARGUMENT: "Thinking is not enabled for this model".
+        # Temperature 0.65 provides natural human-like pitch variation, prosody, and warm cadence.
         return types.GenerateContentConfig(
             response_modalities=["AUDIO"],
             speech_config=speech_config,
-            temperature=0.2,
+            temperature=0.65,
         )
 
     async def synthesize(self, request: SpeechSynthesisRequest) -> SpeechSynthesisResponse:

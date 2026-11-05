@@ -15,20 +15,20 @@ def test_detect_hindi_devanagari():
 
 
 def test_detect_hinglish():
-    res = LanguageDetector.detect_utterance("Bitmax Group mein cloud services ke liye kya options hain?")
+    res = LanguageDetector.detect_utterance("Global Projects mein project services ke liye kya options hain?")
     assert res.detected_language == SupportedLanguage.HINGLISH
     assert res.locale_code == "en-IN"
     assert res.is_code_switched is True
 
 
 def test_detect_english():
-    res = LanguageDetector.detect_utterance("What core enterprise cloud consulting services does Bitmax Group offer?")
+    res = LanguageDetector.detect_utterance("What core project management services does Global Projects offer?")
     assert res.detected_language == SupportedLanguage.ENGLISH
     assert res.locale_code == "en-IN"
 
 
 def test_detect_south_indian_scripts():
-    # Tamil
+    # Tamil (CRITICAL: preserve existing Tamil detection)
     ta = LanguageDetector.detect_utterance("வணக்கம், நீங்கள் என்ன சேவைகளை வழங்குகிறீர்கள்?")
     assert ta.detected_language == SupportedLanguage.TAMIL
     assert ta.locale_code == "ta-IN"
@@ -37,6 +37,21 @@ def test_detect_south_indian_scripts():
     te = LanguageDetector.detect_utterance("నమస్కారం, మీరు ఏ సేవలను అందిస్తారు?")
     assert te.detected_language == SupportedLanguage.TELUGU
     assert te.locale_code == "te-IN"
+
+
+def test_detect_bengali():
+    bn = LanguageDetector.detect_utterance("নমস্কার, গ্লোবাল প্রজেক্টস কী ধরণের সেবা প্রদান করে?")
+    assert bn.detected_language == SupportedLanguage.BENGALI
+    assert bn.locale_code == "bn-IN"
+
+
+def test_session_language_retention_tamil():
+    # Caller speaks Tamil
+    session_meta = {"detected_language": "ta", "language_locale": "ta-IN"}
+    # Caller sends short acknowledgment loanword
+    lang, locale = resolve_response_language("okay thanks", session_meta)
+    assert lang == SupportedLanguage.TAMIL
+    assert locale == "ta-IN"
 
 
 def test_session_language_retention_on_borrowed_loanwords():

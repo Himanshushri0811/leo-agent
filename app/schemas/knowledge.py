@@ -37,7 +37,7 @@ class IngestResponse(BaseModel):
 
 class ApproveSourceRequest(BaseModel):
     approved_by: str = Field(
-        ..., min_length=1, max_length=255, examples=["reviewer@bitmaxgroup.com"]
+        ..., min_length=1, max_length=255, examples=["reviewer@globalprojects.com"]
     )
 
 

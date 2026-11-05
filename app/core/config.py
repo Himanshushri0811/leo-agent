@@ -67,7 +67,7 @@ class Settings(BaseSettings):
 
     # ---- Database -----------------------------------------------------------
     database_url: str = Field(
-        default="postgresql+asyncpg://leo_user:leo_password@localhost:5432/leo_db",
+        default="postgresql+asyncpg://leo_user:leo_password@127.0.0.1:5433/leo_db",
         description="Async SQLAlchemy URL, e.g. postgresql+asyncpg://user:pass@host/db",
     )
     database_pool_size: int = 10

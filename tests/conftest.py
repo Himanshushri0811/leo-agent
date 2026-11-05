@@ -20,10 +20,11 @@ os.environ["APP_ENV"] = "testing"
 os.environ["APP_SECRET_KEY"] = "test-secret-key-for-unit-testing-32-chars-min"
 os.environ["ADMIN_API_KEY"] = "test-admin-api-key"
 os.environ.setdefault(
-    "DATABASE_URL", "postgresql+asyncpg://leo_user:leo_password@localhost:5432/leo_db"
+    "DATABASE_URL", "postgresql+asyncpg://leo_user:leo_password@127.0.0.1:5433/leo_db"
 )
-if os.environ.get("DATABASE_URL") == "postgresql+asyncpg://leo_user:leo_pass@localhost:5432/leo_db":
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://leo_user:leo_password@localhost:5432/leo_db"
+if "5432" in (os.environ.get("DATABASE_URL") or "") and not os.environ.get("DATABASE_URL_FORCE_5432"):
+    os.environ["DATABASE_URL"] = os.environ["DATABASE_URL"].replace(":5432/", ":5433/")
+
 os.environ["LLM_PROVIDER"] = "mock"
 os.environ["EMBEDDINGS_PROVIDER"] = "mock"
 
@@ -54,7 +55,7 @@ def mock_chat_service() -> AsyncMock:
     service = AsyncMock()
     service.process_chat.return_value = OrchChatResponse(
         session_id="test_session_123",
-        response_text="[Mock LEO response] Bitmax Group provides cloud solutions.",
+        response_text="[Mock LEO response] Global Projects provides project management and BPO services.",
         sources=[],
         model="mock-model",
         provider="mock",
@@ -70,9 +71,9 @@ def mock_knowledge_service() -> AsyncMock:
     service = AsyncMock()
     mock_source = MagicMock()
     mock_source.id = uuid.uuid4()
-    mock_source.name = "Bitmax Overview"
+    mock_source.name = "Global Projects Overview"
     mock_source.source_type = "url"
-    mock_source.source_url = "https://bitmaxgroup.com/about"
+    mock_source.source_url = "https://globalprojects.in/about"
     mock_source.status = "pending"
     mock_source.version = 1
     mock_source.created_at = datetime.now(UTC)

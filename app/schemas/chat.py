@@ -25,7 +25,7 @@ class ChatRequest(BaseModel):
         min_length=1,
         max_length=2000,
         description="The customer question.",
-        examples=["What services does Bitmax Group offer?"],
+        examples=["What project opportunities does Global Projects provide?"],
     )
     conversation_history: list[MessageContext] = Field(
         default_factory=list,

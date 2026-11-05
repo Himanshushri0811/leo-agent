@@ -4,13 +4,13 @@ from app.knowledge.parsing import parse_text
 
 
 def test_parse_text_normalisation() -> None:
-    raw = "  Bitmax \x00 Group \n\n\n\n Cloud   Solutions.  "
+    raw = "  Global \x00 Projects \n\n\n\n Cloud   Solutions.  "
     normalized, content_hash = parse_text(raw)
 
     assert "\x00" not in normalized
     assert "\n\n\n" not in normalized
     assert "   " not in normalized
-    assert normalized == "Bitmax Group \n\n Cloud Solutions."
+    assert normalized == "Global Projects \n\n Cloud Solutions."
     assert len(content_hash) == 64  # SHA-256
 
 
