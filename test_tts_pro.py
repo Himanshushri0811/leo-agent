@@ -13,8 +13,8 @@ async def main():
     try:
         result = await provider.synthesize(
             SpeechSynthesisRequest(
-                text="Hello LEO, welcome to Bitmax Group.",
-                voice_name="Aoede",
+                text="Hello LEO, welcome to Global project.",
+                voice_name="Charon",
                 language_code="en-IN",
             )
         )
