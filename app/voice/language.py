@@ -29,6 +29,9 @@ class SupportedLanguage(StrEnum):
     KANNADA = "kn"
     MALAYALAM = "ml"
     BENGALI = "bn"
+    TULU = "tcy"
+    KONKANI = "kok"
+    URDU = "ur"
 
 
 # Verified locale tags for ASR & TTS providers
@@ -41,10 +44,14 @@ LANGUAGE_LOCALE_MAP: dict[SupportedLanguage, str] = {
     SupportedLanguage.KANNADA: "kn-IN",
     SupportedLanguage.MALAYALAM: "ml-IN",
     SupportedLanguage.BENGALI: "bn-IN",
+    SupportedLanguage.TULU: "tcy-IN",
+    SupportedLanguage.KONKANI: "kok-IN",
+    SupportedLanguage.URDU: "ur-IN",
 }
 
 # Unicode script ranges for Indian languages
 _SCRIPT_PATTERNS = {
+    SupportedLanguage.URDU: re.compile(r"[\u0600-\u06FF]"),
     SupportedLanguage.HINDI: re.compile(r"[\u0900-\u097F]"),
     SupportedLanguage.BENGALI: re.compile(r"[\u0980-\u09FF]"),
     SupportedLanguage.TAMIL: re.compile(r"[\u0B80-\u0BFF]"),
@@ -186,6 +193,26 @@ def resolve_response_language(
     Authoritative per-session language resolution.
     Returns (SupportedLanguage, locale_code) and updates session_metadata.
     """
+    # If the user/IVR explicitly selected a language for this session, maintain it throughout the call
+    sel_locale = session_metadata.get("language_locale")
+    sel_lang = session_metadata.get("selected_language")
+    if sel_locale and sel_lang and sel_lang.lower() != "auto":
+        # Find matching SupportedLanguage enum
+        matched_lang = next(
+            (lang for lang, loc in LANGUAGE_LOCALE_MAP.items() if loc.lower() == sel_locale.lower()),
+            None,
+        )
+        if not matched_lang:
+            prefix = sel_locale.split("-")[0].lower()
+            try:
+                matched_lang = SupportedLanguage(prefix)
+            except ValueError:
+                matched_lang = SupportedLanguage.ENGLISH
+
+        session_metadata["detected_language"] = matched_lang.value
+        session_metadata["language_locale"] = sel_locale
+        return matched_lang, sel_locale
+
     prev_lang_str = session_metadata.get("detected_language")
     prev_lang: SupportedLanguage | None = None
     if prev_lang_str:

@@ -55,6 +55,9 @@ class CallActionType(StrEnum):
     END = "end"
     BARGE_IN = "barge_in"
     INTERRUPT = "interrupt"
+    CLEAR = "clear"
+    SELECT_LANGUAGE = "select_language"
+    DTMF = "dtmf"
 
 
 class SpeakerRole(StrEnum):
@@ -80,6 +83,9 @@ class DemoCall(BaseModel):
     caller_id: str
     caller_name: str
     caller_phone_masked: str
+    extension: str = "1001"
+    language: str | None = None
+    language_code: str | None = None
     status: CallStatus
     is_muted: bool = False
     is_simulated: bool = True
@@ -109,11 +115,37 @@ class HumanAgent(BaseModel):
     calls_handled_today: int = 0
 
 
+class LanguageOption(BaseModel):
+    id: str
+    key: str
+    code: str
+    name: str
+    native_name: str
+    script: str
+    greeting: str
+    is_first_level: bool = True
+    tts_verified: bool = False
+    asr_verified: bool = False
+    sample_inquiries: list[str] = Field(default_factory=list)
+
+
+class SelectLanguageRequest(BaseModel):
+    key: str | None = None
+    language_code: str
+    language_name: str | None = None
+
+
+class DtmfInputRequest(BaseModel):
+    digit: str = Field(..., min_length=1, max_length=2)
+
+
 class SimulateCallRequest(BaseModel):
     caller_name: str | None = None
     caller_phone: str | None = None
     auto_answer_delay_sec: int = Field(default=3, ge=0, le=30)
     initial_message: str | None = None
+    demo_extension: str = Field(default="1001")
+    language: str | None = None
 
 
 class SimulateOutboundCallRequest(BaseModel):
@@ -121,6 +153,8 @@ class SimulateOutboundCallRequest(BaseModel):
     customer_phone: str | None = None
     call_purpose: str = Field(default="account inquiry follow-up", max_length=200)
     auto_answer_delay_sec: int = Field(default=2, ge=0, le=30)
+    demo_extension: str = Field(default="1001")
+    language: str = Field(default="auto")
 
 
 class CallActionRequest(BaseModel):
