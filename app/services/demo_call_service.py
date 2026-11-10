@@ -237,42 +237,202 @@ ESCALATION_KEYWORDS = [
 
 DEFAULT_AGENTS: list[HumanAgent] = [
     HumanAgent(
-        agent_id="agt_sarah_01",
-        name="Sarah Jenkins",
-        department="Tier-2 Enterprise Support",
+        agent_id="agt_ananya_01",
+        name="Ananya Sharma",
+        department="Tier-2 Telecom & Enterprise Support",
         status=AgentStatus.AVAILABLE,
         calls_handled_today=14,
     ),
     HumanAgent(
-        agent_id="agt_david_02",
-        name="David Chen",
-        department="Cloud Solutions Architecture",
+        agent_id="agt_rajesh_02",
+        name="Rajesh Verma",
+        department="Enterprise Architecture & Systems",
         status=AgentStatus.AVAILABLE,
-        calls_handled_today=9,
+        calls_handled_today=11,
     ),
     HumanAgent(
-        agent_id="agt_elena_03",
-        name="Elena Rostova",
-        department="Security & Compliance Operations",
+        agent_id="agt_priya_03",
+        name="Priya Nair",
+        department="Customer Escalation & Solutions",
+        status=AgentStatus.AVAILABLE,
+        calls_handled_today=8,
+    ),
+    HumanAgent(
+        agent_id="agt_david_04",
+        name="David Chen",
+        department="Cloud Infrastructure Operations",
         status=AgentStatus.BUSY,
-        calls_handled_today=18,
-    ),
-    HumanAgent(
-        agent_id="agt_marcus_04",
-        name="Marcus Vance",
-        department="Billing & Account Governance",
-        status=AgentStatus.OFFLINE,
-        calls_handled_today=6,
+        calls_handled_today=19,
     ),
 ]
 
 
 SAMPLE_CALLERS = [
-    ("Acme Corp - IT Director", "+1 (555) 349-8291"),
-    ("Global Logistics - Ops Lead", "+1 (555) 781-4402"),
-    ("Fintech Synergy - VP Eng", "+1 (555) 612-9011"),
-    ("Horizon Health - CISO Office", "+1 (555) 233-1899"),
-    ("Vertex Retail - Cloud Architect", "+1 (555) 890-5544"),
+    ("Acme Corp - IT Director", "+91 (982) 014-4829"),
+    ("Global Logistics - Ops Lead", "+91 (944) 812-9304"),
+    ("Fintech Synergy - VP Eng", "+91 (998) 765-4321"),
+    ("Horizon Health - CISO Office", "+91 (916) 723-9810"),
+    ("Vertex Retail - Cloud Architect", "+91 (983) 345-6789"),
+]
+
+SUPPORTED_DEMO_LANGUAGES: list[dict[str, Any]] = [
+    {
+        "id": "en",
+        "key": "1",
+        "code": "en-IN",
+        "name": "English",
+        "native_name": "English",
+        "script": "Latin",
+        "is_first_level": True,
+        "greeting": "English confirmed. Hello! I am LEO, your AI voice assistant. How may I help you today?",
+        "tts_verified": True,
+        "asr_verified": True,
+        "sample_inquiries": [
+            "What enterprise cloud services do you provide?",
+            "Tell me about Global Projects architecture consulting.",
+            "What are your SLA and technical support tiers?",
+            "I need to speak with a human agent right now.",
+        ],
+    },
+    {
+        "id": "hi",
+        "key": "2",
+        "code": "hi-IN",
+        "name": "Hindi",
+        "native_name": "हिन्दी",
+        "script": "Devanagari",
+        "is_first_level": True,
+        "greeting": "हिन्दी चुनी गई। नमस्ते! मैं LEO हूँ, आपका AI वॉइस असिस्टेंट। बताइए, मैं आपकी किस तरह मदद कर सकता हूँ?",
+        "tts_verified": True,
+        "asr_verified": True,
+        "sample_inquiries": [
+            "आप कौन सी क्लाउड और आईटी सेवाएं प्रदान करते हैं?",
+            "ग्लोबल प्रोजेक्ट्स के बारे में विस्तार से बताएं।",
+            "कस्टम सॉफ्टवेयर और एंटरप्राइज समाधान क्या हैं?",
+            "मुझे एक मानव विशेषज्ञ से बात करनी है।",
+        ],
+    },
+    {
+        "id": "ta",
+        "key": "1",
+        "code": "ta-IN",
+        "name": "Tamil",
+        "native_name": "தமிழ்",
+        "script": "Tamil",
+        "is_first_level": False,
+        "greeting": "தமிழ் உறுதிப்படுத்தப்பட்டது. வணக்கம்! நான் LEO, உங்கள் AI உதவியாளர். இன்று நான் உங்களுக்கு எப்படி உதவ முடியும்?",
+        "tts_verified": True,
+        "asr_verified": True,
+        "sample_inquiries": [
+            "உங்கள் கிளவுட் சேவைகள் என்னென்ன?",
+            "குளோபல் ப்ராஜெக்ட்ஸ் நிறுவனத்தின் சேவைகள் பற்றி கூறுங்கள்.",
+            "ஆதரவு மற்றும் பராமரிப்பு விவரங்கள் என்ன?",
+            "நான் மனித அதிகாரியுடன் பேச வேண்டும்.",
+        ],
+    },
+    {
+        "id": "te",
+        "key": "2",
+        "code": "te-IN",
+        "name": "Telugu",
+        "native_name": "తెలుగు",
+        "script": "Telugu",
+        "is_first_level": False,
+        "greeting": "తెలుగు నిర్ధారించబడింది. నమస్కారం! నేను LEO, మీ AI సహాయకుడిని. ఈరోజు మీకు ఎలా సహాయం చేయగలను?",
+        "tts_verified": True,
+        "asr_verified": True,
+        "sample_inquiries": [
+            "మీరు అందించే క్లౌڈ సేవల గురించి చెప్పండి.",
+            "గ్లోబల్ ప్రాజెక్ట్స్ గురించి వివరాలు కావాలి.",
+            "కస్టమర్ సపోర్ట్ ప్లాన్లు ఏమిటి?",
+            "నేను మానవ నిపుణుడితో మాట్లాడాలి.",
+        ],
+    },
+    {
+        "id": "kn",
+        "key": "3",
+        "code": "kn-IN",
+        "name": "Kannada",
+        "native_name": "ಕನ್ನಡ",
+        "script": "Kannada",
+        "is_first_level": False,
+        "greeting": "ಕನ್ನಡ ದೃಢೀಕರಿಸಲಾಗಿದೆ. ನಮಸ್ಕಾರ! ನಾನು LEO, ನಿಮ್ಮ AI ಸಹಾಯಕ. ಇಂದು ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
+        "tts_verified": True,
+        "asr_verified": True,
+        "sample_inquiries": [
+            "ನಿಮ್ಮ ಕ್ಲೌಡ್ ಸೇವೆಗಳು ಯಾವುವು?",
+            "ಗ್ಲೋಬಲ್ ಪ್ರಾಜೆಕ್ಟ್ಸ್ ಬಗ್ಗೆ ಮಾಹಿತಿ ನೀಡಿ.",
+            "ತಾಂತ್ರಿಕ ಬೆಂಬಲ ಲಭ್ಯವಿದೆಯೇ?",
+            "ನಾನು ಅಧಿಕಾರಿಯೊಂದಿಗೆ ಮಾತನಾಡಬೇಕು.",
+        ],
+    },
+    {
+        "id": "ml",
+        "key": "4",
+        "code": "ml-IN",
+        "name": "Malayalam",
+        "native_name": "മലയാളം",
+        "script": "Malayalam",
+        "is_first_level": False,
+        "greeting": "മലയാളം സ്ഥിരീകരിച്ചു. നമസ്കാരം! ഞാൻ LEO, നിങ്ങളുടെ AI അസിസ്റ്റന്റാണ്. ഇന്ന് നിങ്ങളെ എങ്ങനെ സഹായിക്കാം?",
+        "tts_verified": True,
+        "asr_verified": True,
+        "sample_inquiries": [
+            "നിങ്ങൾ നൽകുന്ന ക്ലൗഡ് സേവനങ്ങൾ എന്തൊക്കെയാണ്?",
+            "ഗ്ലോബൽ പ്രോജക്ട്സ് സേവനങ്ങളെക്കുറിച്ച് വ്യക്തമാക്കുക.",
+            "സാങ്കേതിക സഹായം ലഭ്യമാണോ?",
+            "എനിക്ക് ഒരു ഏജന്റുമായി സംസാരിക്കണം.",
+        ],
+    },
+    {
+        "id": "tcy",
+        "key": "5",
+        "code": "tcy-IN",
+        "name": "Tulu",
+        "native_name": "ತುಳು",
+        "script": "Kannada / Tulu",
+        "is_first_level": False,
+        "greeting": "ತುಳು ಆಯ್ಕೆ ಆತ್ಂಡ್. ನಮಸ್ಕಾರ! ಯಾನ್ LEO, ಈರೆನ AI ಸಹಾಯಕ. ಈ ದಿನ ಈರೆಗ್ ಎಂಚಿನ ಸಾಯ ಮಲ್ಪೊಲಿ?",
+        "tts_verified": False,
+        "asr_verified": False,
+        "sample_inquiries": [
+            "ಈರೆನ ಕ್ಲೌಡ್ ಸೇವೆಲು ಒವ್ವು?",
+            "ಗ್ಲೋಬಲ್ ಪ್ರಾಜೆಕ್ಟ್ಸ್ ಬಗ್ಗೆ ತೆರಿಪಾಲೆ.",
+        ],
+    },
+    {
+        "id": "kok",
+        "key": "6",
+        "code": "kok-IN",
+        "name": "Konkani",
+        "native_name": "कोंकणी",
+        "script": "Devanagari / Roman",
+        "is_first_level": False,
+        "greeting": "कोंकणी निवडली. देव बरें करूं! हांव LEO, तुमचो AI व्हॉइस असिस्टंट. आज हांव तुमकां कशी मदत करूं?",
+        "tts_verified": False,
+        "asr_verified": False,
+        "sample_inquiries": [
+            "तुमच्यो क्लाउड सेवा खंच्यो आसात?",
+            "ग्लोबल प्रोजेक्ट्स विशीं म्हायती दिया.",
+        ],
+    },
+    {
+        "id": "ur",
+        "key": "7",
+        "code": "ur-IN",
+        "name": "Urdu",
+        "native_name": "اردو",
+        "script": "Perso-Arabic",
+        "is_first_level": False,
+        "greeting": "اردو منتخب کی گئی۔ آداب! میں LEO ہوں، آپ کا AI وائس اسسٹنٹ۔ آج میں آپ کی کیا مدد کر سکتا ہوں؟",
+        "tts_verified": True,
+        "asr_verified": True,
+        "sample_inquiries": [
+            "آپ کون سی کلاؤڈ اور آئی ٹی خدمات فراہم کرتے हैं؟",
+            "گلوبل پروجیکٹس کی سروسز کے بارے میں بتائیں۔",
+            "مجھے کسٹمر کیئر ایجنٹ سے بات کرنی ہے۔",
+        ],
+    },
 ]
 
 
@@ -297,6 +457,7 @@ class DemoCallService:
 
         self._auto_answer_tasks: dict[str, asyncio.Task[None]] = {}
         self._background_tasks: set[asyncio.Task[Any]] = set()
+        self._db_available: bool = True
 
         self.turn_manager = TurnManager()
         self._audio_cache: dict[str, list[bytes]] = {}
@@ -336,8 +497,11 @@ class DemoCallService:
 
     async def _persist_call(self, call: DemoCall) -> None:
         """Persist a call record to PostgreSQL via DemoCallRepository."""
+        if not getattr(self, "_db_available", True) or self._settings.is_testing:
+            return
+
         try:
-            async with asyncio.timeout(5.0):
+            async with asyncio.timeout(1.5):
                 from app.db.session import session_context
                 from app.repositories.demo_call_repository import DemoCallRepository
 
@@ -345,16 +509,20 @@ class DemoCallService:
                     repo = DemoCallRepository(session)
                     await repo.save_call(call)
         except Exception as exc:
-            logger.error("db_persist_call_failed", call_id=call.call_id, error=str(exc))
-            raise
+            self._db_available = False
+            logger.warning("db_persist_call_failed_fallback_in_memory", call_id=call.call_id, error=str(exc))
 
     def _schedule_persist_call(self, call: DemoCall) -> None:
         """Schedule non-blocking background persistence to database."""
+        if not getattr(self, "_db_available", True) or self._settings.is_testing:
+            return
+
         async def _wrapper() -> None:
             try:
                 await self._persist_call(call.model_copy(deep=True))
             except Exception as exc:
-                logger.error("db_persist_call_background_error", call_id=call.call_id, error=str(exc))
+                self._db_available = False
+                logger.warning("db_persist_call_background_error", call_id=call.call_id, error=str(exc))
 
         task = asyncio.create_task(_wrapper())
         self._background_tasks.add(task)
@@ -364,8 +532,11 @@ class DemoCallService:
         self, call_id: str, turn: TranscriptTurn, turn_index: int
     ) -> None:
         """Persist a transcript turn to PostgreSQL via DemoCallRepository."""
+        if not getattr(self, "_db_available", True) or self._settings.is_testing:
+            return
+
         try:
-            async with asyncio.timeout(5.0):
+            async with asyncio.timeout(1.5):
                 from app.db.session import session_context
                 from app.repositories.demo_call_repository import DemoCallRepository
 
@@ -376,18 +547,22 @@ class DemoCallService:
                         await repo.save_call(self._calls[call_id])
                     await repo.add_transcript_turn(call_id, turn, turn_index)
         except Exception as exc:
-            logger.error("db_persist_transcript_failed", call_id=call_id, error=str(exc))
-            raise
+            self._db_available = False
+            logger.warning("db_persist_transcript_failed_fallback_in_memory", call_id=call_id, error=str(exc))
 
     def _schedule_persist_transcript_turn(
         self, call_id: str, turn: TranscriptTurn, turn_index: int
     ) -> None:
         """Schedule non-blocking background persistence of transcript turn."""
+        if not getattr(self, "_db_available", True) or self._settings.is_testing:
+            return
+
         async def _wrapper() -> None:
             try:
                 await self._persist_transcript_turn(call_id, turn.model_copy(deep=True), turn_index)
             except Exception as exc:
-                logger.error("db_persist_transcript_background_error", call_id=call_id, error=str(exc))
+                self._db_available = False
+                logger.warning("db_persist_transcript_background_error", call_id=call_id, error=str(exc))
 
         task = asyncio.create_task(_wrapper())
         self._background_tasks.add(task)
@@ -403,8 +578,11 @@ class DemoCallService:
         notes: str | None = None,
     ) -> None:
         """Persist an agent escalation handoff record to PostgreSQL."""
+        if not getattr(self, "_db_available", True) or self._settings.is_testing:
+            return
+
         try:
-            async with asyncio.timeout(5.0):
+            async with asyncio.timeout(1.5):
                 from app.db.session import session_context
                 from app.repositories.demo_call_repository import DemoCallRepository
 
@@ -422,8 +600,8 @@ class DemoCallService:
                         notes=notes,
                     )
         except Exception as exc:
-            logger.error("db_persist_handoff_failed", call_id=call_id, error=str(exc))
-            raise
+            self._db_available = False
+            logger.warning("db_persist_handoff_failed_fallback_in_memory", call_id=call_id, error=str(exc))
 
     async def _record_transcript_turn(self, call: DemoCall, turn: TranscriptTurn) -> None:
         """Append turn to in-memory transcript under lock and schedule persistence to database."""
@@ -601,6 +779,8 @@ class DemoCallService:
         caller_phone: str | None = None,
         auto_answer_delay_sec: int = 3,
         initial_message: str | None = None,
+        demo_extension: str = "1001",
+        language: str | None = None,
     ) -> DemoCall:
         """Create a new incoming call session up to the 25-concurrency limit."""
 
@@ -636,6 +816,8 @@ class DemoCallService:
                 caller_id=f"CR-{random.randint(1000, 9999)}",
                 caller_name=caller_name,
                 caller_phone_masked=masked_phone,
+                extension=demo_extension,
+                language=language,
                 direction=CallDirection.INBOUND,
                 status=CallStatus.RINGING,
                 turn_state="idle",
@@ -648,11 +830,15 @@ class DemoCallService:
                 transcript=[],
                 metadata={
                     "direction": "inbound",
-                    "simulated_telephony_channel": "SIP/Demo-WebRTC-Mock-Trunk",
+                    "extension": demo_extension,
+                    "simulated_telephony_channel": f"SIP/LEO-Ext-{demo_extension}-WebRTC-Trunk (Simulated)",
                     "audio_codec": "Opus 48kHz (Simulated)",
-                    "region": "us-east-1",
-                    "initial_message": initial_message
-                    or "Hello! I am calling to inquire about Global Projects services.",
+                    "region": "ap-south-1",
+                    "initial_message": initial_message,
+                    "ivr_active": True,
+                    "ivr_level": 1,
+                    "language_locale": "en-IN",
+                    "demo_label": "DEMO / SIMULATED CALL",
                 },
             )
 
@@ -682,6 +868,8 @@ class DemoCallService:
         customer_phone: str | None = None,
         call_purpose: str = "account inquiry follow-up",
         auto_answer_delay_sec: int = 2,
+        demo_extension: str = "1001",
+        language: str = "auto",
     ) -> DemoCall:
         """Create a simulated outbound call session with explicit stated purpose."""
 
@@ -711,12 +899,25 @@ class DemoCallService:
 
             masked_phone = self.mask_phone(customer_phone)
 
+            # Resolve language metadata if specific language selected
+            selected_lang_name = None if language == "auto" else language
+            selected_lang_code = None
+            if selected_lang_name:
+                for l_item in SUPPORTED_DEMO_LANGUAGES:
+                    if l_item["name"].lower() == selected_lang_name.lower() or l_item["code"].lower() == selected_lang_name.lower():
+                        selected_lang_name = l_item["name"]
+                        selected_lang_code = l_item["code"]
+                        break
+
             call = DemoCall(
                 call_id=call_id,
                 session_id=session_id,
                 caller_id=f"CR-{random.randint(1000, 9999)}",
                 caller_name=customer_name,
                 caller_phone_masked=masked_phone,
+                extension=demo_extension,
+                language=selected_lang_name,
+                language_code=selected_lang_code,
                 direction=CallDirection.OUTBOUND,
                 status=CallStatus.RINGING,
                 turn_state="idle",
@@ -729,10 +930,14 @@ class DemoCallService:
                 transcript=[],
                 metadata={
                     "direction": "outbound",
+                    "extension": demo_extension,
                     "call_purpose": call_purpose,
-                    "simulated_telephony_channel": "SIP/Demo-Outbound-Mock-Trunk (Simulated - No real PSTN)",
+                    "selected_language": selected_lang_name,
+                    "language_locale": selected_lang_code or "en-IN",
+                    "simulated_telephony_channel": f"SIP/LEO-Ext-{demo_extension}-Outbound-Trunk (Simulated)",
                     "audio_codec": "Opus 48kHz (Simulated)",
-                    "region": "us-east-1",
+                    "region": "ap-south-1",
+                    "demo_label": "DEMO / SIMULATED CALL",
                     "initial_message": f"Hello, I understand you are calling regarding {call_purpose}.",
                 },
             )
@@ -932,24 +1137,42 @@ class DemoCallService:
 
             if call.direction == CallDirection.OUTBOUND:
                 purpose = call.metadata.get("call_purpose", "your project inquiry")
-
-                greeting_text = (
-                    f"Hello, this is LEO calling from Global Projects regarding {purpose}. "
-                    "Is this a convenient time to speak?"
-                )
-
+                lang = call.metadata.get("selected_language", "auto")
+                ext_str = getattr(call, "extension", "1001") or "1001"
+                if lang and ("hi" in lang.lower() or "hindi" in lang.lower()):
+                    greeting_text = (
+                        f"Namaste! Main LEO bol raha hoon Global Projects se (Extension {ext_str}) "
+                        f"{purpose} ke sambandh mein. Kya yeh aapse baat karne ka sahi samay hai?"
+                    )
+                else:
+                    greeting_text = (
+                        f"Hello, this is LEO calling from Global Projects (Extension {ext_str}) "
+                        f"regarding {purpose}. Is this a convenient time to speak?"
+                    )
             else:
+                # English welcome greeting for incoming calls to demo extension 1001
+                call.metadata["ivr_active"] = True
+                call.metadata["ivr_level"] = 1
+                call.metadata["language_locale"] = "en-IN"
+
+            if call.direction == CallDirection.INBOUND:
                 greeting_text = (
-                    "Hello! Welcome to Global Projects. I'm LEO, your AI assistant. "
-                    "How can I help you today?"
+                    "Hello! Welcome to LEO, your AI voice assistant. "
+                    "I'm here to help you."
                 )
+            # (outbound greeting_text already set above)
 
             greeting_turn = TranscriptTurn(
                 id=f"turn_{uuid.uuid4().hex[:8]}",
                 role=SpeakerRole.LEO,
                 text=greeting_text,
                 timestamp=datetime.now(UTC),
-                metadata={"turn_type": "greeting"},
+                metadata={
+                    "turn_type": "greeting",
+                    "language_locale": "en-IN",
+                    "ivr_active": call.metadata.get("ivr_active", False),
+                    "extension": getattr(call, "extension", "1001"),
+                },
             )
 
             await self._record_transcript_turn(call, greeting_turn)
@@ -962,15 +1185,42 @@ class DemoCallService:
                 },
             )
 
+            # Emit IVR language-selection instructions for inbound calls
+            if call.direction == CallDirection.INBOUND:
+                await asyncio.sleep(0.1)
+                ivr_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.LEO,
+                    text=(
+                        "Please select your preferred language. "
+                        "For English, press 1. "
+                        "For Hindi, press 2. "
+                        "For other Indian languages, press 3."
+                    ),
+                    timestamp=datetime.now(UTC),
+                    metadata={
+                        "turn_type": "ivr_instructions",
+                        "language_locale": "en-IN",
+                        "ivr_active": True,
+                    },
+                )
+                await self._record_transcript_turn(call, ivr_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {
+                        "call_id": call_id,
+                        "turn": ivr_turn.model_dump(mode="json"),
+                    },
+                )
+
             # Step 3: Transition to ACTIVE listening state
 
             await self.transition_state(call_id, CallStatus.ACTIVE)
 
-            # Automatically dispatch initial customer inquiry after short pause
-
+            # Automatically dispatch initial customer inquiry after short pause if not waiting in IVR
             initial_msg = call.metadata.get("initial_message")
 
-            if initial_msg:
+            if initial_msg and not call.metadata.get("ivr_active"):
                 asyncio.create_task(
                     self._dispatch_customer_message_after_delay(call_id, initial_msg, delay=1.2)
                 )
@@ -1002,11 +1252,337 @@ class DemoCallService:
         elif action in (CallActionType.BARGE_IN, CallActionType.INTERRUPT):
             return await self.handle_barge_in(call_id, reason=reason or "user_barge_in")
 
+        elif action == CallActionType.CLEAR:
+            return await self.clear_transcript(call_id)
+
+        elif action == CallActionType.DTMF:
+            return await self.handle_dtmf(call_id, digit=reason or "1")
+
         elif action == CallActionType.END:
             await self.transition_state(call_id, CallStatus.CALL_ENDING)
 
             await self.transition_state(call_id, CallStatus.COMPLETED)
 
+        return call
+
+    async def handle_dtmf(self, call_id: str, digit: str) -> DemoCall:
+        """Process DTMF keypad digit for active call session."""
+        call = self.get_call(call_id)
+        if not call:
+            raise KeyError(f"Call {call_id} not found")
+
+        digit_str = str(digit).strip()
+        call.metadata["last_dtmf"] = digit_str
+
+        ivr_active = call.metadata.get("ivr_active", False)
+        ivr_level = int(call.metadata.get("ivr_level", 1) or 1)
+
+        # If IVR is not active (e.g. normal conversation phase), record DTMF signaling event
+        if not ivr_active:
+            sys_turn = TranscriptTurn(
+                id=f"turn_{uuid.uuid4().hex[:8]}",
+                role=SpeakerRole.SYSTEM,
+                text=f"Customer pressed {digit_str}",
+                timestamp=datetime.now(UTC),
+                metadata={"turn_type": "dtmf_digit", "digit": digit_str},
+            )
+            await self._record_transcript_turn(call, sys_turn)
+            await self.broadcast_event(
+                "transcript_turn",
+                {"call_id": call_id, "turn": sys_turn.model_dump(mode="json")},
+            )
+            await self.broadcast_event("dtmf_received", {"call_id": call_id, "digit": digit_str})
+            return call
+
+        # Level 1: Main IVR Menu (1: English, 2: Hindi, 3: Other Indian Languages)
+        if ivr_level == 1:
+            if digit_str == "1":
+                return await self.select_language(call_id, language_code="en-IN", language_name="English", key="1")
+            elif digit_str == "2":
+                return await self.select_language(call_id, language_code="hi-IN", language_name="Hindi", key="2")
+            elif digit_str == "3":
+                sys_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.SYSTEM,
+                    text="Customer pressed 3 (Other Indian Languages)",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "dtmf_digit", "digit": "3", "menu": "main"},
+                )
+                await self._record_transcript_turn(call, sys_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": sys_turn.model_dump(mode="json")},
+                )
+
+                async with self._lock:
+                    call.metadata["ivr_level"] = 2
+
+                submenu_prompt = (
+                    "Please select your preferred language. "
+                    "For Tamil, press 1. "
+                    "Telugu, press 2. "
+                    "Kannada, press 3. "
+                    "Malayalam, press 4. "
+                    "Tulu, press 5. "
+                    "Konkani, press 6. "
+                    "Urdu, press 7."
+                )
+                submenu_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.LEO,
+                    text=submenu_prompt,
+                    timestamp=datetime.now(UTC),
+                    metadata={
+                        "turn_type": "ivr_submenu_instructions",
+                        "language_locale": "en-IN",
+                        "ivr_active": True,
+                        "ivr_level": 2,
+                    },
+                )
+                await self._record_transcript_turn(call, submenu_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": submenu_turn.model_dump(mode="json")},
+                )
+                self._schedule_persist_call(call)
+                await self.broadcast_event(
+                    "call_state_changed",
+                    {
+                        "call_id": call_id,
+                        "previous_status": call.status,
+                        "new_status": call.status,
+                        "call": call.model_dump(mode="json"),
+                    },
+                )
+                return call
+            elif digit_str in ("*", "0", "#"):
+                sys_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.SYSTEM,
+                    text=f"Customer pressed {digit_str}",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "dtmf_digit", "digit": digit_str},
+                )
+                await self._record_transcript_turn(call, sys_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": sys_turn.model_dump(mode="json")},
+                )
+                repeat_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.LEO,
+                    text="For English, press 1. For Hindi, press 2. For other Indian languages, press 3.",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "ivr_instructions", "language_locale": "en-IN", "ivr_active": True},
+                )
+                await self._record_transcript_turn(call, repeat_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": repeat_turn.model_dump(mode="json")},
+                )
+                return call
+            else:
+                sys_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.SYSTEM,
+                    text=f"Customer pressed {digit_str}",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "dtmf_digit", "digit": digit_str},
+                )
+                await self._record_transcript_turn(call, sys_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": sys_turn.model_dump(mode="json")},
+                )
+                inv_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.LEO,
+                    text="Invalid selection. For English, press 1. For Hindi, press 2. For other Indian languages, press 3.",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "ivr_instructions", "language_locale": "en-IN", "ivr_active": True},
+                )
+                await self._record_transcript_turn(call, inv_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": inv_turn.model_dump(mode="json")},
+                )
+                return call
+
+        # Level 2: Submenu (1: Tamil, 2: Telugu, 3: Kannada, 4: Malayalam, 5: Tulu, 6: Konkani, 7: Urdu)
+        elif ivr_level == 2:
+            submenu_map = {
+                "1": ("ta-IN", "Tamil"),
+                "2": ("te-IN", "Telugu"),
+                "3": ("kn-IN", "Kannada"),
+                "4": ("ml-IN", "Malayalam"),
+                "5": ("tcy-IN", "Tulu"),
+                "6": ("kok-IN", "Konkani"),
+                "7": ("ur-IN", "Urdu"),
+            }
+            if digit_str in submenu_map:
+                code, name = submenu_map[digit_str]
+                return await self.select_language(call_id, language_code=code, language_name=name, key=digit_str)
+            elif digit_str in ("*", "0", "#"):
+                sys_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.SYSTEM,
+                    text=f"Customer pressed {digit_str} (Return to Main Menu)",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "dtmf_digit", "digit": digit_str},
+                )
+                await self._record_transcript_turn(call, sys_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": sys_turn.model_dump(mode="json")},
+                )
+                async with self._lock:
+                    call.metadata["ivr_level"] = 1
+                return_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.LEO,
+                    text="Returning to main menu. For English, press 1. For Hindi, press 2. For other Indian languages, press 3.",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "ivr_instructions", "language_locale": "en-IN", "ivr_active": True, "ivr_level": 1},
+                )
+                await self._record_transcript_turn(call, return_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": return_turn.model_dump(mode="json")},
+                )
+                self._schedule_persist_call(call)
+                await self.broadcast_event(
+                    "call_state_changed",
+                    {
+                        "call_id": call_id,
+                        "previous_status": call.status,
+                        "new_status": call.status,
+                        "call": call.model_dump(mode="json"),
+                    },
+                )
+                return call
+            else:
+                sys_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.SYSTEM,
+                    text=f"Customer pressed {digit_str}",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "dtmf_digit", "digit": digit_str},
+                )
+                await self._record_transcript_turn(call, sys_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": sys_turn.model_dump(mode="json")},
+                )
+                inv_turn = TranscriptTurn(
+                    id=f"turn_{uuid.uuid4().hex[:8]}",
+                    role=SpeakerRole.LEO,
+                    text="Invalid selection. For Tamil, press 1. Telugu, press 2. Kannada, press 3. Malayalam, press 4. Tulu, press 5. Konkani, press 6. Urdu, press 7.",
+                    timestamp=datetime.now(UTC),
+                    metadata={"turn_type": "ivr_submenu_instructions", "language_locale": "en-IN", "ivr_active": True, "ivr_level": 2},
+                )
+                await self._record_transcript_turn(call, inv_turn)
+                await self.broadcast_event(
+                    "transcript_turn",
+                    {"call_id": call_id, "turn": inv_turn.model_dump(mode="json")},
+                )
+                return call
+
+        return call
+
+    async def select_language(
+        self,
+        call_id: str,
+        language_code: str,
+        language_name: str | None = None,
+        key: str | None = None,
+    ) -> DemoCall:
+        """Register IVR language selection and welcome caller in their selected language."""
+        call = self.get_call(call_id)
+        if not call:
+            raise KeyError(f"Call {call_id} not found")
+
+        # Find matching language config
+        lang_item = next((item for item in SUPPORTED_DEMO_LANGUAGES if item["code"].lower() == language_code.lower()), None)
+        if not lang_item and language_name:
+            lang_item = next((item for item in SUPPORTED_DEMO_LANGUAGES if item["name"].lower() == language_name.lower()), None)
+
+        display_name = lang_item["name"] if lang_item else (language_name or language_code)
+        native_name = lang_item["native_name"] if lang_item else display_name
+        greeting = lang_item["greeting"] if lang_item else f"Welcome! You have selected {display_name}."
+
+        key_label = f"Keypad {key} Pressed: " if key else "Language Selected: "
+        customer_selection_turn = TranscriptTurn(
+            id=f"turn_{uuid.uuid4().hex[:8]}",
+            role=SpeakerRole.SYSTEM,
+            text=f"Customer pressed {key} ({native_name} - {display_name})" if key else f"Customer selected {native_name} ({display_name})",
+            timestamp=datetime.now(UTC),
+            metadata={"turn_type": "language_selection", "language_code": language_code, "key": key},
+        )
+        await self._record_transcript_turn(call, customer_selection_turn)
+        await self.broadcast_event(
+            "transcript_turn",
+            {"call_id": call_id, "turn": customer_selection_turn.model_dump(mode="json")},
+        )
+
+        async with self._lock:
+            call.language = display_name
+            call.language_code = language_code
+            call.metadata["selected_language"] = display_name
+            call.metadata["language_locale"] = language_code
+            call.metadata["language_native"] = native_name
+            call.metadata["ivr_active"] = False
+            call.metadata["ivr_level"] = 0
+
+        # LEO confirmation welcome greeting turn in the selected language:
+        leo_welcome_turn = TranscriptTurn(
+            id=f"turn_{uuid.uuid4().hex[:8]}",
+            role=SpeakerRole.LEO,
+            text=greeting,
+            timestamp=datetime.now(UTC),
+            metadata={
+                "turn_type": "language_welcome",
+                "language_locale": language_code,
+                "detected_language": language_code.split("-")[0],
+                "sample_inquiries": lang_item.get("sample_inquiries", []) if lang_item else [],
+            },
+        )
+        await self._record_transcript_turn(call, leo_welcome_turn)
+        await self.broadcast_event(
+            "transcript_turn",
+            {"call_id": call_id, "turn": leo_welcome_turn.model_dump(mode="json")},
+        )
+
+        self._schedule_persist_call(call)
+        await self.broadcast_event(
+            "call_state_changed",
+            {
+                "call_id": call_id,
+                "previous_status": call.status,
+                "new_status": call.status,
+                "call": call.model_dump(mode="json"),
+            },
+        )
+        return call
+
+    async def clear_transcript(self, call_id: str) -> DemoCall:
+        """Clear all turns from the specified call transcript."""
+        call = self.get_call(call_id)
+        if not call:
+            raise KeyError(f"Call {call_id} not found")
+
+        async with self._lock:
+            call.transcript = []
+
+        self._schedule_persist_call(call)
+        await self.broadcast_event(
+            "call_state_changed",
+            {
+                "call_id": call_id,
+                "previous_status": call.status,
+                "new_status": call.status,
+                "call": call.model_dump(mode="json"),
+            },
+        )
         return call
 
     async def handle_barge_in(self, call_id: str, reason: str = "user_barge_in") -> DemoCall:
@@ -1070,6 +1646,45 @@ class DemoCallService:
 
         except Exception as exc:
             logger.error("initial_customer_message_failed", call_id=call_id, error=str(exc))
+
+    def _get_localized_response(self, query: str, lang_code: str, default_text: str) -> str:
+        lang = (lang_code or "").lower()
+        q = (query or "").lower()
+        if any(h in q for h in ["human", "agent", "operator", "specialist", "इंसान", "बात", "உதவி", "మనిషి", "ಅಧಿಕಾರಿ"]):
+            if "hi" in lang:
+                return "जी बिल्कुल, मैं आपकी कॉल हमारे वरिष्ठ कस्टमर सपोर्ट विशेषज्ञ को ट्रांसफर कर रहा हूँ। कृपया लाइन पर बने रहें।"
+            elif "ta" in lang:
+                return "நிச்சயமாக, உங்கள் அழைப்பை எங்கள் வாடிக்கையாளர் சேவை நிபுணருக்கு மாற்றுகிறேன். தயவுசெய்து காத்திருக்கவும்."
+            elif "te" in lang:
+                return "తప్పకుండా, మీ కాల్‌ను మా కస్టమర్ కేర్ స్పెషలిస్ట్‌కు బదిలీ చేస్తున్నాను. దయచేసి లైన్‌లో వేచి ఉండండి."
+            elif "kn" in lang:
+                return "ಖಂಡಿತ, ನಿಮ್ಮ ಕರೆಯನ್ನು ನಮ್ಮ ತಜ್ಞ ಅಧಿಕಾರಿಗೆ ವರ್ಗಾಯಿಸುತ್ತಿದ್ದೇನೆ. ದಯವಿಟ್ಟು ಲೈನ್‌ನಲ್ಲಿ ನಿರೀಕ್ಷಿಸಿ."
+            elif "ml" in lang:
+                return "തീർച്ചയായും, നിങ്ങളുടെ കോൾ ഞങ്ങളുടെ കസ്റ്റമർ സപ്പോർട്ട് സ്പെഷ്യലിസ്റ്റിലേക്ക് മാറ്റുന്നു. ദയവായി കാത്തിരിക്കുക."
+            elif "ur" in lang:
+                return "جی بالکل، میں آپ کی کال کسٹمر کیئر نمائندے کو ٹرانسفر کر رہا ہوں۔ براہ کرم لائن پر رہیں۔"
+            else:
+                return "Certainly, I am transferring your call to a human specialist right away. Please hold the line."
+
+        if "hi" in lang:
+            return "ग्लोबल प्रोजेक्ट्स एंटरप्राइज क्लाउड आर्किटेक्चर, आईटी इंफ्रास्ट्रक्चर और डिजिटल ट्रांसफॉर्मेशन समाधान प्रदान करता है। मैं आपकी परियोजना में कैसे सहायता कर सकता हूँ?"
+        elif "ta" in lang:
+            return "குளோபல் ப்ராஜெக்ட்ஸ் நிறுவனம் கிளவுட் மேலாண்மை, தரவு பாதுகாப்பு மற்றும் மென்பொருள் மேம்பாட்டு சேவைகளை வழங்குகிறது. உங்களுக்கு எவ்வாறு உதவ வேண்டும்?"
+        elif "te" in lang:
+            return "గ్లోబల్ ప్రాజెక్ట్స్ సంస్థ ఎంటర్‌ప్రైజ్ క్లౌడ్, డేటా సెక్యూరిటీ మరియు సాఫ్ట్‌వేర్ అభివృద్ధి సేవలను అందిస్తుంది. మీకు ఏ వివరాలు కావాలి?"
+        elif "kn" in lang:
+            return "ಗ್ಲೋಬಲ್ ಪ್ರಾಜೆಕ್ಟ್ಸ್ ಎಂಟರ್‌ಪ್ರೈಸ್ ಕ್ಲೌಡ್ ಸಲ್ಯೂಷನ್ಸ್ ಮತ್ತು ತಂತ್ರಜ್ಞಾನ ಸೇವೆಗಳನ್ನು ಒದಗಿಸುತ್ತದೆ. ನಿಮ್ಮ ಯೋಜನೆಗೆ ನಾವು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?"
+        elif "ml" in lang:
+            return "ഗ്ലോബൽ പ്രോജക്ട്സ് എന്റർപ്രൈസ് ക്ലൗഡ് കൺസൾട്ടിംഗ്, ഡിജിറ്റൽ പരിവർത്തനം എന്നീ സേവനങ്ങൾ നൽകുന്നു. നിങ്ങൾക്ക് ഏത് വിവരമാണ് ആവശ്യം?"
+        elif "tcy" in lang:
+            return "ಗ್ಲೋಬಲ್ ಪ್ರಾಜೆಕ್ಟ್ಸ್ ಸಂಸ್ಥೆ ಕ್ಲೌಡ್ ಸೇವೆಲು ಬೊಕ್ಕ ಐಟಿ ಬೆಂಬಲ ಕೊರ್ಪುಂಡು. ಈರೆನ ಪ್ರಾಜೆಕ್ಟ್‌ಗ್ ನಮ ಎಂಚ ಸಾಯ ಮಲ್ಪೊಲಿ?"
+        elif "kok" in lang:
+            return "ग्लोबल प्रोजेक्ट्स कंपनी क्लाउड आनी सॉफ्टवेअर सोल्यूशन्स दिता. तुमकां कसली म्हायती जाय?"
+        elif "ur" in lang:
+            return "گلوبل پروجیکٹس انٹرپرائز کلاؤڈ آرکیٹیکچر اور آئی ٹی سروسز فراہم کرتا ہے۔ ہم آپ کے پروجیکٹ میں کس طرح مدد کر سکتے ہیں؟"
+        elif "en" in lang:
+            return "Global Projects provides enterprise cloud architecture, IT infrastructure management, and secure software development services. How can I assist with your project requirements today?"
+        return default_text
 
     async def send_customer_message(
         self,
@@ -1260,10 +1875,18 @@ class DemoCallService:
                 for s in ai_response.sources
             ]
 
+            final_response_text = ai_response.response_text
+            effective_lang = lang_locale or call.metadata.get("language_locale", "en-IN")
+            if (
+                getattr(self._llm, "provider_name", "") == "mock"
+                or "[Mock LEO response]" in final_response_text
+            ):
+                final_response_text = self._get_localized_response(message_text, effective_lang, final_response_text)
+
             leo_turn = TranscriptTurn(
                 id=f"turn_{uuid.uuid4().hex[:8]}",
                 role=SpeakerRole.LEO,
-                text=ai_response.response_text,
+                text=final_response_text,
                 timestamp=datetime.now(UTC),
                 sources=source_dicts,
                 metadata={
@@ -1278,7 +1901,7 @@ class DemoCallService:
                     "ttft_ms": getattr(ai_response, "ttft_ms", None),
                     "rag_duration_ms": round(rag_duration_ms, 2),
                     "detected_language": det_lang.value,
-                    "language_locale": lang_locale,
+                    "language_locale": effective_lang,
                 },
             )
 

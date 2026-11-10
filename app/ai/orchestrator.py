@@ -608,6 +608,9 @@ def _build_turn_language_directive(
             SupportedLanguage.KANNADA: "\n\n[Turn Language Directive: Caller spoke Kannada. You MUST reply in natural Kannada using native Kannada script (ಕನ್ನಡ). Explain retrieved facts in Kannada. Do NOT respond in English.]",
             SupportedLanguage.MALAYALAM: "\n\n[Turn Language Directive: Caller spoke Malayalam. You MUST reply in natural Malayalam using native Malayalam script (മലയാളം). Explain retrieved facts in Malayalam. Do NOT respond in English.]",
             SupportedLanguage.BENGALI: "\n\n[Turn Language Directive: Caller spoke Bengali. You MUST reply in natural Bengali using native Bengali script (বাংলা). Explain retrieved facts in Bengali. Do NOT respond in English.]",
+            SupportedLanguage.TULU: "\n\n[Turn Language Directive: Caller spoke Tulu. You MUST reply in natural conversational Tulu using Kannada script. Explain retrieved facts in Tulu. Do NOT respond in English.]",
+            SupportedLanguage.KONKANI: "\n\n[Turn Language Directive: Caller spoke Konkani. You MUST reply in natural Konkani using Devanagari script. Explain retrieved facts in Konkani. Do NOT respond in English.]",
+            SupportedLanguage.URDU: "\n\n[Turn Language Directive: Caller spoke Urdu. You MUST reply in natural Urdu using native Perso-Arabic script (اردو). Explain retrieved facts in Urdu. Do NOT respond in English.]",
         }
 
         return directives.get(lang, "")

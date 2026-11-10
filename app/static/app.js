@@ -32,6 +32,14 @@
     healthPollTimer: null,    // Interval for health checking
     isFetchingSessions: false,// Overlap guard for active sessions fetch
     isFetchingHistory: false, // Overlap guard for history fetch
+    // --- Demo Console & Dialer State ---
+    dialerDigits: '+91 98201 44829',
+    dialerStatus: 'ready',
+    dialerCallId: null,
+    dialerLang: 'auto',
+    activeTab: 'incoming',
+    selectedIvrLang: null,
+    historyCalls: [],
   };
 
   // DOM Elements
@@ -44,6 +52,38 @@
     btnSimulateCall: document.getElementById('btn-simulate-call'),
     sseIndicator: document.getElementById('sse-indicator'),
     providerName: document.getElementById('provider-name'),
+
+    // Tab Navigation (3 tabs now: incoming, dialer, history)
+    tabIncomingBtn: document.getElementById('tab-incoming-btn'),
+    tabDialerBtn: document.getElementById('tab-dialer-btn'),
+    tabHistoryBtn: document.getElementById('tab-history-btn'),
+    incomingTabContent: document.getElementById('incoming-tab-content'),
+    dialerTabContent: document.getElementById('dialer-tab-content'),
+    historyTabContent: document.getElementById('history-tab-content'),
+
+    // Incoming Simulator Controls
+    inputIncomingCallerName: document.getElementById('input-incoming-caller-name'),
+    inputIncomingCallerPhone: document.getElementById('input-incoming-caller-phone'),
+    incomingDelaySelect: document.getElementById('incoming-delay-select'),
+    btnTriggerIncoming: document.getElementById('btn-trigger-incoming'),
+
+    // Incoming Active Call Card (in left Incoming tab)
+    incomingActiveCard: document.getElementById('incoming-active-card'),
+    incomingActiveBadge: document.getElementById('incoming-active-badge'),
+    incomingActiveStatus: document.getElementById('incoming-active-status'),
+    incomingActiveCaller: document.getElementById('incoming-active-caller'),
+    incomingActivePhone: document.getElementById('incoming-active-phone'),
+    btnIncomingAnswer: document.getElementById('btn-incoming-answer'),
+    btnIncomingReject: document.getElementById('btn-incoming-reject'),
+
+    // Outgoing Dialer Controls
+    dialerDigits: document.getElementById('dialer-digits'),
+    dialerStatus: document.getElementById('dialer-status'),
+    dialerLangSelect: document.getElementById('dialer-lang-select'),
+    dialerKeypad: document.getElementById('dialer-keypad'),
+    btnDialerBackspace: document.getElementById('btn-dialer-backspace'),
+    btnDialerCall: document.getElementById('btn-dialer-call'),
+    btnDialerEnd: document.getElementById('btn-dialer-end'),
 
     // Metrics Bar
     statTotal: document.getElementById('stat-total'),
@@ -64,11 +104,29 @@
     monitorEscalationPill: document.getElementById('monitor-escalation-pill'),
     monitorCallerId: document.getElementById('monitor-caller-id'),
     monitorCallerPhone: document.getElementById('monitor-caller-phone'),
+    monitorExtTag: document.getElementById('monitor-ext-tag'),
+    monitorDirectionTag: document.getElementById('monitor-direction-tag'),
+    monitorLangTag: document.getElementById('monitor-lang-tag'),
+    btnClearChat: document.getElementById('btn-clear-chat'),
     monitorTimer: document.getElementById('monitor-timer'),
     btnMute: document.getElementById('btn-mute'),
     muteLabel: document.getElementById('mute-label'),
     btnEscalateQuick: document.getElementById('btn-escalate-quick'),
     btnHangup: document.getElementById('btn-hangup'),
+
+    // Interactive IVR Language Panel & Keypad
+    ivrPanel: document.getElementById('ivr-panel'),
+    ivrLastDigit: document.getElementById('ivr-last-digit'),
+    ivrDtmfStatusText: document.getElementById('ivr-dtmf-status-text'),
+    ivrGreetingQuote: document.getElementById('ivr-greeting-quote'),
+    ivrFirstLevelGrid: document.getElementById('ivr-first-level-grid'),
+    ivrDtmfKeypad: document.getElementById('ivr-dtmf-keypad'),
+    btnIvrMore: document.getElementById('btn-ivr-more'),
+    btnIvrBackMain: document.getElementById('btn-ivr-back-main'),
+    ivrMoreLanguages: document.getElementById('ivr-more-languages'),
+    ivrSearchInput: document.getElementById('ivr-search-input'),
+    incomingKeypadBox: document.getElementById('incoming-keypad-box'),
+    incomingDialerKeypad: document.getElementById('incoming-dialer-keypad'),
 
     // Waveform
     waveformIndicator: document.getElementById('waveform-indicator'),
@@ -84,7 +142,12 @@
     btnMicrophone: document.getElementById('btn-microphone'),
     quickPrompts: document.getElementById('quick-prompts'),
 
-    // Right Handoff
+    // Right Handoff & Stepper
+    btnHandoverTrigger: document.getElementById('btn-handover-trigger'),
+    stepAi: document.getElementById('step-ai'),
+    stepInitiated: document.getElementById('step-initiated'),
+    stepRouting: document.getElementById('step-routing'),
+    stepCompleted: document.getElementById('step-completed'),
     escalationCard: document.getElementById('escalation-card'),
     escalationEmptyNotice: document.getElementById('escalation-empty-notice'),
     escalationDetails: document.getElementById('escalation-details'),
@@ -94,11 +157,22 @@
     agentList: document.getElementById('agent-list'),
     agentOnlineCount: document.getElementById('agent-online-count'),
 
+    // AI Response Monitor
+    aiEngineStatus: document.getElementById('ai-engine-status'),
+    aiMonitorLang: document.getElementById('ai-monitor-lang'),
+    aiTurnState: document.getElementById('ai-turn-state'),
+    aiGroundingStatus: document.getElementById('ai-grounding-status'),
+
     // History Table
     historyTableBody: document.getElementById('history-table-body'),
     historySearch: document.getElementById('history-search'),
     historyFilterStatus: document.getElementById('history-filter-status'),
     btnRefreshHistory: document.getElementById('btn-refresh-history'),
+
+    // History mini-list (in left panel History tab)
+    historyMiniList: document.getElementById('history-mini-list'),
+    historySearchLeft: document.getElementById('history-search-left'),
+    btnRefreshHistoryLeft: document.getElementById('btn-refresh-history-left'),
 
     // Modals
     incomingModal: document.getElementById('incoming-modal'),
@@ -267,10 +341,20 @@
       }
     });
 
-    // History controls
+    // History controls (bottom table)
     el.btnRefreshHistory.addEventListener('click', () => loadHistory());
     el.historyFilterStatus.addEventListener('change', () => loadHistory());
     el.historySearch.addEventListener('input', debounce(() => loadHistory(), 350));
+
+    // History mini-list controls (left panel History tab)
+    if (el.btnRefreshHistoryLeft) {
+      el.btnRefreshHistoryLeft.addEventListener('click', () => {
+        loadHistory().then(() => renderHistoryMiniList());
+      });
+    }
+    if (el.historySearchLeft) {
+      el.historySearchLeft.addEventListener('input', debounce(() => renderHistoryMiniList(), 300));
+    }
 
     // Drawer close
     el.btnCloseDrawer.addEventListener('click', () => {
@@ -281,6 +365,522 @@
         el.drawerModal.classList.add('hidden');
       }
     });
+
+    // ── Tab switching (Incoming Simulator vs Outgoing Dialer vs History) ───
+    if (el.tabIncomingBtn && el.tabDialerBtn) {
+      el.tabIncomingBtn.addEventListener('click', () => switchTab('incoming'));
+      el.tabDialerBtn.addEventListener('click', () => switchTab('dialer'));
+    }
+    if (el.tabHistoryBtn) {
+      el.tabHistoryBtn.addEventListener('click', () => switchTab('history'));
+    }
+
+    // ── Trigger Incoming Simulator from Tab ────────────────────────────────
+    if (el.btnTriggerIncoming) {
+      el.btnTriggerIncoming.addEventListener('click', onTriggerIncomingFromTab);
+    }
+
+    // ── In-Tab Incoming Call Controls ──────────────────────────────────────
+    if (el.btnIncomingAnswer) {
+      el.btnIncomingAnswer.addEventListener('click', () => {
+        if (!state.activeCallId) return;
+        hideIncomingModal();
+        executeCallAction(state.activeCallId, 'answer');
+      });
+    }
+    if (el.btnIncomingReject) {
+      el.btnIncomingReject.addEventListener('click', () => {
+        if (!state.activeCallId) return;
+        hideIncomingModal();
+        const call = state.sessions[state.activeCallId];
+        if (call?.status === 'ringing') {
+          executeCallAction(state.activeCallId, 'reject', 'Declined from Incoming panel');
+        } else {
+          executeCallAction(state.activeCallId, 'end', 'Ended from Incoming panel');
+        }
+      });
+    }
+
+    // ── Outgoing Dialer Keypad, Backspace, Call, End ───────────────────────
+    if (el.dialerKeypad) {
+      el.dialerKeypad.addEventListener('click', onDialerKeypadClick);
+    }
+    if (el.incomingDialerKeypad) {
+      el.incomingDialerKeypad.addEventListener('click', onDialerKeypadClick);
+    }
+    if (el.ivrDtmfKeypad) {
+      el.ivrDtmfKeypad.addEventListener('click', onDialerKeypadClick);
+    }
+    if (el.btnIvrBackMain) {
+      el.btnIvrBackMain.addEventListener('click', () => {
+        if (state.activeCallId) sendDtmfDigit(state.activeCallId, '*');
+      });
+    }
+    if (el.btnDialerBackspace) {
+      el.btnDialerBackspace.addEventListener('click', onDialerBackspace);
+    }
+    if (el.btnDialerCall) {
+      el.btnDialerCall.addEventListener('click', onDialerCallClick);
+    }
+    if (el.btnDialerEnd) {
+      el.btnDialerEnd.addEventListener('click', onDialerEndClick);
+    }
+
+    // ── Dialer preset chips ────────────────────────────────────────────────
+    document.querySelectorAll('.preset-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const phone = chip.dataset.phone;
+        if (phone && el.dialerDigits) {
+          el.dialerDigits.textContent = phone;
+          state.dialerDigits = phone;
+          playDtmfTone('5', 80);
+        }
+      });
+    });
+
+    // ── Clear Conversation Transcript ──────────────────────────────────────
+    if (el.btnClearChat) {
+      el.btnClearChat.addEventListener('click', onClearTranscriptClick);
+    }
+
+    // ── Interactive IVR Language Panel Click & Keyboard Handling ───────────
+    if (el.ivrPanel) {
+      el.ivrPanel.addEventListener('click', onIvrPanelClick);
+    }
+    if (el.btnIvrMore) {
+      el.btnIvrMore.addEventListener('click', onIvrMoreToggle);
+    }
+    if (el.ivrSearchInput) {
+      el.ivrSearchInput.addEventListener('input', onIvrSearchInput);
+    }
+    document.addEventListener('keydown', onDocumentKeydown);
+
+    // ── Human Handover Trigger ─────────────────────────────────────────────
+    if (el.btnHandoverTrigger) {
+      el.btnHandoverTrigger.addEventListener('click', onTriggerHandover);
+    }
+  }
+
+  // ============================================================================
+  // Tab Switching & Dialer UI Operations
+  // ============================================================================
+  function switchTab(tabName) {
+    state.activeTab = tabName;
+
+    // Update tab button states
+    [el.tabIncomingBtn, el.tabDialerBtn, el.tabHistoryBtn].forEach(btn => {
+      if (btn) btn.classList.remove('active');
+    });
+    [el.incomingTabContent, el.dialerTabContent, el.historyTabContent].forEach(pane => {
+      if (pane) pane.classList.add('hidden');
+    });
+
+    if (tabName === 'incoming') {
+      if (el.tabIncomingBtn) el.tabIncomingBtn.classList.add('active');
+      if (el.incomingTabContent) el.incomingTabContent.classList.remove('hidden');
+    } else if (tabName === 'dialer') {
+      if (el.tabDialerBtn) el.tabDialerBtn.classList.add('active');
+      if (el.dialerTabContent) el.dialerTabContent.classList.remove('hidden');
+    } else if (tabName === 'history') {
+      if (el.tabHistoryBtn) el.tabHistoryBtn.classList.add('active');
+      if (el.historyTabContent) el.historyTabContent.classList.remove('hidden');
+      renderHistoryMiniList();
+    }
+  }
+
+  async function onTriggerIncomingFromTab() {
+    if (el.btnTriggerIncoming) el.btnTriggerIncoming.disabled = true;
+    const name = el.inputIncomingCallerName?.value?.trim() || 'Aarav Patel';
+    const phone = el.inputIncomingCallerPhone?.value?.trim() || '+91 98201 12345';
+    const delay = parseInt(el.incomingDelaySelect?.value || '0', 10);
+
+    try {
+      const resp = await fetch('/api/v1/demo/calls/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caller_name: name,
+          caller_phone: phone,
+          demo_extension: '1001',
+          auto_answer_delay_sec: delay,
+        }),
+      });
+      if (resp.ok) {
+        const newCall = await resp.json();
+        handleCallRinging(newCall);
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        alert(err.detail || 'Failed to simulate incoming call to Ext 1001.');
+      }
+    } catch (exc) {
+      console.error('Trigger incoming call failed:', exc);
+    } finally {
+      if (el.btnTriggerIncoming) el.btnTriggerIncoming.disabled = false;
+    }
+  }
+
+  function onDialerKeypadClick(e) {
+    const keyBtn = e.target.closest('.keypad-key');
+    if (!keyBtn) return;
+    const digit = keyBtn.dataset.digit || keyBtn.dataset.key;
+    if (!digit) return;
+
+    const activeCall = state.sessions[state.activeCallId];
+    const isCallActive = activeCall && ['ringing', 'connecting', 'greeting', 'active', 'speaking', 'processing'].includes(activeCall.status);
+
+    // If an active call is ongoing, route keypad digit directly to active call DTMF
+    if (isCallActive) {
+      sendDtmfDigit(state.activeCallId, digit);
+      return;
+    }
+
+    // Otherwise, when idle in outgoing dialer, record number to dial
+    playDtmfTone(digit, 100);
+    if (!el.dialerDigits) return;
+    let current = el.dialerDigits.textContent.trim();
+    if (current === '--' || current === '') {
+      current = '+91 ';
+    }
+    if (current.length < 20) {
+      current += digit;
+      el.dialerDigits.textContent = current;
+      state.dialerDigits = current;
+    }
+  }
+
+  function onDialerBackspace() {
+    if (!el.dialerDigits) return;
+    let current = el.dialerDigits.textContent.trim();
+    if (current.length > 0) {
+      current = current.slice(0, -1);
+      el.dialerDigits.textContent = current || '+91 ';
+      state.dialerDigits = current || '+91 ';
+      playDtmfTone('#', 60);
+    }
+  }
+
+  async function onDialerCallClick() {
+    const digits = (el.dialerDigits?.textContent || '').trim();
+    if (!digits || digits === '+91' || digits === '+91 ') {
+      alert('Please enter or select a customer phone number to dial.');
+      return;
+    }
+
+    if (el.btnDialerCall) el.btnDialerCall.disabled = true;
+    if (el.dialerStatus) {
+      el.dialerStatus.textContent = 'Initiating Ext 1001 Outbound...';
+      el.dialerStatus.className = 'dialer-status active';
+    }
+
+    playDtmfTone('1', 120);
+
+    try {
+      const selectedLang = el.dialerLangSelect?.value || 'auto';
+      const resp = await fetch('/api/v1/demo/calls/simulate-outbound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caller_name: 'Customer Outbound',
+          caller_phone: digits,
+          demo_extension: '1001',
+          language: selectedLang,
+        }),
+      });
+
+      if (resp.ok) {
+        const call = await resp.json();
+        state.sessions[call.call_id] = call;
+        state.dialerCallId = call.call_id;
+        selectCall(call.call_id);
+
+        if (el.dialerStatus) {
+          el.dialerStatus.textContent = 'Ringing destination...';
+        }
+        playDtmfTone('3', 140);
+
+        setTimeout(() => {
+          if (el.dialerStatus) {
+            el.dialerStatus.textContent = `Connected (Ext 1001 • ${selectedLang.toUpperCase()})`;
+          }
+          if (el.btnDialerCall) el.btnDialerCall.classList.add('hidden');
+          if (el.btnDialerEnd) el.btnDialerEnd.classList.remove('hidden');
+        }, 1200);
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        if (el.dialerStatus) {
+          el.dialerStatus.textContent = `Failed: ${err.detail || 'Could not dial'}`;
+        }
+        if (el.btnDialerCall) el.btnDialerCall.disabled = false;
+      }
+    } catch (err) {
+      console.error('Dialer call failed:', err);
+      if (el.dialerStatus) el.dialerStatus.textContent = 'Failed: Connection error';
+      if (el.btnDialerCall) el.btnDialerCall.disabled = false;
+    }
+  }
+
+  async function onDialerEndClick() {
+    const callId = state.dialerCallId || state.activeCallId;
+    if (callId) {
+      await executeCallAction(callId, 'end', 'Ended by dialer');
+    }
+    if (el.dialerStatus) {
+      el.dialerStatus.textContent = 'Call Completed';
+      el.dialerStatus.className = 'dialer-status';
+    }
+    if (el.btnDialerCall) {
+      el.btnDialerCall.classList.remove('hidden');
+      el.btnDialerCall.disabled = false;
+    }
+    if (el.btnDialerEnd) {
+      el.btnDialerEnd.classList.add('hidden');
+    }
+    state.dialerCallId = null;
+  }
+
+  // ============================================================================
+  // IVR Language & DTMF Signaling Helpers
+  // ============================================================================
+  async function sendDtmfDigit(callId, digit) {
+    if (!callId) return;
+    const d = String(digit).trim();
+    playDtmfTone(d, 120);
+
+    // Audio & Visual pulse on DTMF screen
+    if (el.ivrLastDigit) {
+      el.ivrLastDigit.textContent = d;
+      el.ivrLastDigit.classList.add('digit-pulse');
+      setTimeout(() => el.ivrLastDigit?.classList.remove('digit-pulse'), 350);
+    }
+    if (el.ivrDtmfStatusText) {
+      el.ivrDtmfStatusText.textContent = `Processing Keypad Digit: ${d}`;
+    }
+
+    try {
+      const resp = await fetch(`/api/v1/demo/calls/${callId}/dtmf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ digit: d }),
+      });
+      if (resp.ok) {
+        const updated = await resp.json();
+        state.sessions[callId] = updated;
+        if (updated.language) state.selectedIvrLang = updated.language;
+        updateMonitorUI();
+        renderTranscriptUI();
+      }
+    } catch (exc) {
+      console.error('DTMF send error:', exc);
+    }
+  }
+
+  async function selectIvrLanguage(callId, langCode, langName, key) {
+    if (!callId) return;
+    playDtmfTone(key || '1', 130);
+    try {
+      const resp = await fetch(`/api/v1/demo/calls/${callId}/select-language`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language_code: langCode,
+          language_name: langName,
+          key: key ? String(key) : null,
+        }),
+      });
+      if (resp.ok) {
+        const updated = await resp.json();
+        state.sessions[callId] = updated;
+        state.selectedIvrLang = langName;
+        if (el.ivrPanel) el.ivrPanel.classList.add('hidden');
+        updateMonitorUI();
+        renderTranscriptUI();
+      }
+    } catch (exc) {
+      console.error('Select language error:', exc);
+    }
+  }
+
+  function onIvrPanelClick(e) {
+    if (!state.activeCallId) return;
+
+    // Check if clicked an inline keypad button
+    const keypadBtn = e.target.closest('.keypad-key');
+    if (keypadBtn) {
+      const digit = keypadBtn.dataset.digit || keypadBtn.dataset.key;
+      if (digit) {
+        sendDtmfDigit(state.activeCallId, digit);
+        return;
+      }
+    }
+
+    // Check if clicked a language button
+    const btn = e.target.closest('.ivr-lang-btn');
+    if (!btn) return;
+
+    const digit = btn.dataset.digit || btn.dataset.key;
+    if (digit === '3' && !btn.dataset.code) {
+      sendDtmfDigit(state.activeCallId, '3');
+      return;
+    }
+    if (digit === '*') {
+      sendDtmfDigit(state.activeCallId, '*');
+      return;
+    }
+    if (digit) {
+      sendDtmfDigit(state.activeCallId, digit);
+      return;
+    }
+
+    const langCode = btn.dataset.code;
+    const langName = btn.dataset.name;
+    if (langCode && langName) {
+      selectIvrLanguage(state.activeCallId, langCode, langName, digit);
+    }
+  }
+
+  function onIvrMoreToggle() {
+    if (state.activeCallId) {
+      sendDtmfDigit(state.activeCallId, '3');
+    } else if (el.ivrMoreLanguages) {
+      el.ivrMoreLanguages.classList.toggle('hidden');
+    }
+  }
+
+  function onIvrSearchInput() {
+    const query = (el.ivrSearchInput?.value || '').toLowerCase().trim();
+    if (!el.ivrPanel) return;
+    const buttons = el.ivrPanel.querySelectorAll('.ivr-lang-btn');
+    buttons.forEach(btn => {
+      const text = btn.textContent.toLowerCase();
+      const code = (btn.dataset.langCode || '').toLowerCase();
+      if (!query || text.includes(query) || code.includes(query)) {
+        btn.style.display = 'flex';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+    if (query && el.ivrMoreLanguages && el.ivrMoreLanguages.classList.contains('hidden')) {
+      el.ivrMoreLanguages.classList.remove('hidden');
+    }
+  }
+
+  function onDocumentKeydown(e) {
+    if (!state.activeCallId) return;
+    const activeCall = state.sessions[state.activeCallId];
+    if (!activeCall || ['completed', 'failed'].includes(activeCall.status)) return;
+
+    // Skip if actively typing into input text fields
+    if (
+      document.activeElement === el.customerInput ||
+      document.activeElement === el.ivrSearchInput ||
+      document.activeElement === el.historySearch ||
+      document.activeElement === el.inputIncomingCallerName ||
+      document.activeElement === el.inputIncomingCallerPhone
+    ) {
+      return;
+    }
+
+    const key = e.key;
+    if (['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '#'].includes(key)) {
+      sendDtmfDigit(state.activeCallId, key);
+    }
+  }
+
+  async function onClearTranscriptClick() {
+    const callId = state.activeCallId;
+    if (!callId) return;
+    if (!confirm('Clear conversation transcript for active demo call?')) return;
+    try {
+      const resp = await fetch(`/api/v1/demo/calls/${callId}/clear-transcript`, {
+        method: 'POST',
+      });
+      if (resp.ok) {
+        const updated = await resp.json();
+        state.sessions[callId] = updated;
+        renderTranscriptUI();
+      }
+    } catch (exc) {
+      console.error('Clear transcript failed:', exc);
+    }
+  }
+
+  // ============================================================================
+  // Human Handover Workflow Simulation
+  // ============================================================================
+  function updateHandoverStepper(call) {
+    if (!el.stepAi) return;
+    [el.stepAi, el.stepInitiated, el.stepRouting, el.stepCompleted].forEach(s => {
+      if (s) s.className = 'stepper-stage';
+    });
+
+    if (!call || (!call.escalated && !call.assigned_agent_id)) {
+      if (el.stepAi) el.stepAi.className = 'stepper-stage active';
+      return;
+    }
+
+    if (el.stepAi) el.stepAi.className = 'stepper-stage completed';
+
+    if (call.assigned_agent_id) {
+      if (el.stepInitiated) el.stepInitiated.className = 'stepper-stage completed';
+      if (el.stepRouting) el.stepRouting.className = 'stepper-stage completed';
+      if (el.stepCompleted) el.stepCompleted.className = 'stepper-stage active';
+    } else if (call.escalated) {
+      if (el.stepInitiated) el.stepInitiated.className = 'stepper-stage completed';
+      if (el.stepRouting) el.stepRouting.className = 'stepper-stage active';
+    }
+  }
+
+  async function onTriggerHandover() {
+    const callId = state.activeCallId;
+    if (!callId) return;
+    const call = state.sessions[callId];
+    if (!call || call.status === 'completed' || call.status === 'failed') return;
+
+    if (el.btnHandoverTrigger) el.btnHandoverTrigger.disabled = true;
+
+    // Stage 2: Handover Initiated
+    if (el.stepInitiated) el.stepInitiated.className = 'stepper-stage active';
+
+    try {
+      const resp = await fetch(`/api/v1/demo/calls/${callId}/escalate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: 'customer_request',
+          notes: 'Customer requested transfer to live human representative.',
+        }),
+      });
+      if (resp.ok) {
+        const updated = await resp.json();
+        state.sessions[callId] = updated;
+        updateMonitorUI();
+        updateEscalationUI();
+      }
+
+      // Stage 3: Routing to Tier-2 Operator Pool
+      if (el.stepRouting) el.stepRouting.className = 'stepper-stage active';
+
+      setTimeout(async () => {
+        const agent = state.agents.find(a => a.status === 'available') || state.agents[0];
+        const agentId = agent ? agent.agent_id : 'ag_operator_tier2';
+        const assignResp = await fetch(`/api/v1/demo/calls/${callId}/assign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: agentId }),
+        });
+        if (assignResp.ok) {
+          const assigned = await assignResp.json();
+          state.sessions[callId] = assigned;
+          updateMonitorUI();
+          updateEscalationUI();
+          renderTranscriptUI();
+        }
+        if (el.btnHandoverTrigger) el.btnHandoverTrigger.disabled = false;
+      }, 900);
+    } catch (exc) {
+      console.error('Human handover failed:', exc);
+      if (el.btnHandoverTrigger) el.btnHandoverTrigger.disabled = false;
+    }
   }
 
   // ============================================================================
@@ -707,33 +1307,34 @@
     el.queueCountBadge.textContent = activeCalls.length;
     el.concurrencyLabel.textContent = `${activeCalls.length} / 25`;
 
-    if (calls.length === 0) {
+    if (activeCalls.length === 0) {
       el.sessionList.innerHTML = '';
       el.sessionList.appendChild(el.emptyQueueState);
       return;
     }
 
     el.sessionList.innerHTML = '';
-    // Sort active first, then newest
-    calls.sort((a, b) => {
-      const aDone = a.status === 'completed' || a.status === 'failed';
-      const bDone = b.status === 'completed' || b.status === 'failed';
-      if (aDone !== bDone) return aDone ? 1 : -1;
-      return new Date(b.created_at) - new Date(a.created_at);
-    });
+    // Sort newest first
+    activeCalls.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    calls.forEach((call) => {
+    activeCalls.forEach((call) => {
       const item = document.createElement('div');
       item.className = `session-item ${call.call_id === state.activeCallId ? 'active-selected' : ''}`;
       item.role = 'tab';
       item.tabIndex = 0;
+      const isOutbound = (call.direction || '').toLowerCase() === 'outbound';
+      const langBadge = call.language || call.metadata?.language || 'Hindi';
       item.innerHTML = `
         <div class="session-header-row">
           <span class="session-caller-name" title="${escapeHtml(call.caller_name)}">${escapeHtml(call.caller_name)}</span>
           <span class="status-pill ${call.status}">${call.status}</span>
         </div>
-        <div class="session-sub-row">
-          <span class="session-id-tag">${call.caller_id}</span>
+        <div class="session-sub-row" style="margin-top: 4px;">
+          <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+            <span class="badge-direction ${isOutbound ? 'badge-outbound' : 'badge-inbound'}">${isOutbound ? 'OUT' : 'IN'}</span>
+            <span class="badge-ext-1001">1001</span>
+            <span class="badge-lang-tag">${escapeHtml(langBadge)}</span>
+          </div>
           <span>${formatTimer(call.duration_seconds || 0)}</span>
         </div>
       `;
@@ -757,12 +1358,28 @@
       el.monitorEscalationPill.classList.add('hidden');
       el.monitorCallerId.textContent = 'ID: --';
       el.monitorCallerPhone.textContent = '+1 (***) ***-****';
+      if (el.monitorExtTag) el.monitorExtTag.textContent = 'EXT: 1001';
+      if (el.monitorDirectionTag) {
+        el.monitorDirectionTag.textContent = 'READY';
+        el.monitorDirectionTag.className = 'badge-direction badge-inbound';
+      }
+      if (el.monitorLangTag) el.monitorLangTag.textContent = 'English (en-IN)';
       el.monitorTimer.textContent = '00:00';
       el.btnMute.disabled = true;
       el.btnEscalateQuick.disabled = true;
+      if (el.btnHandoverTrigger) el.btnHandoverTrigger.disabled = true;
+      if (el.btnClearChat) el.btnClearChat.disabled = true;
       el.btnHangup.disabled = true;
       el.customerInput.disabled = true;
       el.btnSendMessage.disabled = true;
+      if (el.ivrPanel) el.ivrPanel.classList.add('hidden');
+      if (el.incomingKeypadBox) el.incomingKeypadBox.style.display = 'none';
+      if (el.incomingActiveCard) el.incomingActiveCard.style.display = 'none';
+      updateHandoverStepper(null);
+      if (el.aiEngineStatus) el.aiEngineStatus.textContent = 'Standby';
+      if (el.aiMonitorLang) el.aiMonitorLang.textContent = 'English (en-IN)';
+      if (el.aiTurnState) el.aiTurnState.textContent = '0 Turns Active';
+      if (el.aiGroundingStatus) el.aiGroundingStatus.textContent = 'Grounding Ready';
       return;
     }
 
@@ -782,12 +1399,104 @@
     el.monitorCallerPhone.textContent = call.caller_phone_masked;
     el.monitorTimer.textContent = formatTimer(call.duration_seconds || 0);
 
+    // Extension & Direction tags
+    if (el.monitorExtTag) el.monitorExtTag.textContent = `EXT: ${call.extension || '1001'}`;
+    const isOut = (call.direction || '').toLowerCase() === 'outbound';
+    if (el.monitorDirectionTag) {
+      el.monitorDirectionTag.textContent = isOut ? 'OUTGOING' : 'INCOMING';
+      el.monitorDirectionTag.className = `badge-direction ${isOut ? 'badge-outbound' : 'badge-inbound'}`;
+    }
+
+    // Selected Language tag
+    const langDisplay = call.language || call.metadata?.selected_language || 'English (en-IN)';
+    if (el.monitorLangTag) el.monitorLangTag.textContent = langDisplay;
+
+    // IVR Interactive Panel visibility: show if IVR is active and call is ongoing
+    if (el.ivrPanel) {
+      const isIvrActive = Boolean(call.metadata?.ivr_active) && !isFinished;
+      if (isIvrActive) {
+        el.ivrPanel.classList.remove('hidden');
+        const ivrLevel = parseInt(call.metadata?.ivr_level || 1, 10);
+        if (ivrLevel === 2) {
+          if (el.ivrMoreLanguages) el.ivrMoreLanguages.classList.remove('hidden');
+          if (el.ivrGreetingQuote) {
+            el.ivrGreetingQuote.textContent = '"Please select your preferred language. For Tamil, press 1. Telugu, press 2. Kannada, press 3. Malayalam, press 4. Tulu, press 5. Konkani, press 6. Urdu, press 7."';
+          }
+          if (el.ivrDtmfStatusText) {
+            el.ivrDtmfStatusText.textContent = 'Level 2: Select Regional Language (Press Keypad 1–7)';
+          }
+        } else {
+          if (el.ivrMoreLanguages) el.ivrMoreLanguages.classList.add('hidden');
+          if (el.ivrGreetingQuote) {
+            el.ivrGreetingQuote.textContent = '"Hello! Welcome to LEO, your AI voice assistant. For English press 1, for Hindi press 2, for other Indian languages press 3."';
+          }
+          if (el.ivrDtmfStatusText) {
+            el.ivrDtmfStatusText.textContent = 'Level 1: Select Language (1: English, 2: Hindi, 3: Other)';
+          }
+        }
+        if (el.ivrLastDigit) {
+          el.ivrLastDigit.textContent = call.metadata?.last_dtmf || '—';
+        }
+      } else {
+        el.ivrPanel.classList.add('hidden');
+      }
+    }
+
+    // In-Call Keypad & Active Call Card in Incoming Simulator Tab
+    const isIncomingCallActive = !isOut && !isFinished && ['ringing', 'connecting', 'greeting', 'active', 'speaking', 'processing'].includes(call.status);
+    if (el.incomingKeypadBox) {
+      el.incomingKeypadBox.style.display = isIncomingCallActive ? 'block' : 'none';
+    }
+    if (el.incomingActiveCard) {
+      el.incomingActiveCard.style.display = isIncomingCallActive ? 'flex' : 'none';
+      if (isIncomingCallActive) {
+        if (el.incomingActiveCaller) el.incomingActiveCaller.textContent = call.caller_name;
+        if (el.incomingActivePhone) el.incomingActivePhone.textContent = call.caller_phone_masked;
+        if (el.incomingActiveStatus) {
+          el.incomingActiveStatus.className = `status-pill ${call.status}`;
+          el.incomingActiveStatus.textContent = call.status.toUpperCase();
+        }
+        if (el.btnIncomingAnswer) {
+          if (call.status === 'ringing') {
+            el.btnIncomingAnswer.textContent = 'Answer (1001)';
+            el.btnIncomingAnswer.className = 'btn btn-success btn-sm';
+            el.btnIncomingAnswer.style.display = 'inline-flex';
+          } else {
+            el.btnIncomingAnswer.style.display = 'none';
+          }
+        }
+        if (el.btnIncomingReject) {
+          el.btnIncomingReject.textContent = call.status === 'ringing' ? 'Decline' : 'End Call';
+        }
+      }
+    }
+
+    // Handover Stepper
+    updateHandoverStepper(call);
+
+    // AI Response Monitor
+    if (el.aiEngineStatus) {
+      el.aiEngineStatus.textContent = call.status === 'speaking' ? 'Synthesizing Audio' : (call.status === 'processing' ? 'Generating Response' : (call.status === 'active' ? 'Listening / Ready' : call.status));
+    }
+    if (el.aiMonitorLang) {
+      const code = call.language_code || call.metadata?.language_locale || 'en-IN';
+      el.aiMonitorLang.textContent = `${langDisplay} (${code})`;
+    }
+    if (el.aiTurnState) {
+      el.aiTurnState.textContent = `${call.transcript?.length || 0} Turn(s) Processed`;
+    }
+    if (el.aiGroundingStatus) {
+      el.aiGroundingStatus.textContent = call.metadata?.ivr_active ? 'IVR Menu Phase' : 'LEO Enterprise KB';
+    }
+
     // Mute button label
     el.muteLabel.textContent = call.is_muted ? 'Unmute' : 'Mute';
 
     // Controls enablement
     el.btnMute.disabled = isFinished || call.status === 'ringing';
     el.btnEscalateQuick.disabled = isFinished || call.escalated || call.status === 'ringing';
+    if (el.btnHandoverTrigger) el.btnHandoverTrigger.disabled = isFinished || call.status === 'ringing';
+    if (el.btnClearChat) el.btnClearChat.disabled = isFinished;
     el.btnHangup.disabled = isFinished;
     el.customerInput.disabled = isFinished || call.status === 'ringing';
     el.btnSendMessage.disabled = isFinished || call.status === 'ringing';
@@ -869,6 +1578,9 @@
     if (turn.role === 'leo') {
       audioHtml = `
         <div class="turn-audio" id="audio-${escapeHtml(turn.id)}">
+          <button class="btn-listen-turn" id="btn-listen-${escapeHtml(turn.id)}" type="button"
+                  title="Simulate speech playback" aria-label="Listen speech"
+                  onclick="window.speakTurnText('${escapeHtml(turn.id)}')">🔊 Listen</button>
           <button class="btn-play-audio" id="btn-play-${escapeHtml(turn.id)}" type="button"
                   title="Play LEO speech" aria-label="Play audio" style="display:none"
                   onclick="window.playTurnAudio('${escapeHtml(turn.id)}')">&#9654; Play Audio</button>
@@ -997,7 +1709,9 @@
       const resp = await fetch(`/api/v1/demo/calls?${params.toString()}`);
       if (resp.ok) {
         const calls = await resp.json();
+        state.historyCalls = calls;
         renderHistoryTable(calls);
+        renderHistoryMiniList();
       }
     } catch (exc) {
       console.error('Load history failed:', exc);
@@ -1010,28 +1724,102 @@
     if (calls.length === 0) {
       el.historyTableBody.innerHTML = `
         <tr>
-          <td colspan="8" class="text-center py-4">No calls matching query.</td>
+          <td colspan="10" class="text-center py-4">No calls matching query.</td>
         </tr>
       `;
       return;
     }
 
-    el.historyTableBody.innerHTML = calls.map((call) => `
-      <tr>
-        <td class="history-id-cell">${call.caller_id}</td>
-        <td><strong>${escapeHtml(call.caller_name)}</strong></td>
-        <td><code>${call.caller_phone_masked}</code></td>
-        <td><span class="status-pill ${call.status}">${call.status}</span></td>
-        <td>${formatTimer(call.duration_seconds || 0)}</td>
-        <td>${call.escalated ? '<span class="status-pill warning">Escalated</span>' : '<span class="status-pill active">AI Only</span>'}</td>
-        <td>${new Date(call.created_at).toLocaleTimeString()}</td>
-        <td>
-          <button class="btn btn-secondary btn-sm" onclick="window.inspectTranscript('${call.call_id}')">
-            Inspect
-          </button>
-        </td>
-      </tr>
-    `).join('');
+    el.historyTableBody.innerHTML = calls.map((call) => {
+      const isOutbound = (call.direction || '').toLowerCase() === 'outbound';
+      const langName = call.language || call.metadata?.language || 'Hindi';
+      return `
+        <tr>
+          <td class="history-id-cell">${call.caller_id}</td>
+          <td><strong>${escapeHtml(call.caller_name)}</strong></td>
+          <td><code>${call.caller_phone_masked}</code></td>
+          <td><span class="badge-direction ${isOutbound ? 'badge-outbound' : 'badge-inbound'}">${isOutbound ? 'OUTBOUND' : 'INCOMING'}</span></td>
+          <td><span class="badge-ext-1001">${escapeHtml(call.extension || '1001')}</span></td>
+          <td><span class="badge-lang-tag">${escapeHtml(langName)}</span></td>
+          <td><span class="status-pill ${call.status}">${call.status}</span></td>
+          <td>${formatTimer(call.duration_seconds || 0)}</td>
+          <td>${new Date(call.created_at).toLocaleTimeString()}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="window.inspectTranscript('${call.call_id}')">
+              Inspect
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderHistoryMiniList() {
+    if (!el.historyMiniList) return;
+    const query = (el.historySearchLeft?.value || '').trim().toLowerCase();
+    let calls = state.historyCalls || [];
+
+    if (query) {
+      calls = calls.filter(c => {
+        const name = (c.caller_name || '').toLowerCase();
+        const id = (c.caller_id || '').toLowerCase();
+        const phone = (c.caller_phone || c.caller_phone_masked || '').toLowerCase();
+        const lang = (c.language || '').toLowerCase();
+        const status = (c.status || '').toLowerCase();
+        return name.includes(query) || id.includes(query) || phone.includes(query) || lang.includes(query) || status.includes(query);
+      });
+    }
+
+    if (calls.length === 0) {
+      el.historyMiniList.innerHTML = `
+        <div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:12px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block; margin:0 auto 6px; opacity:0.6;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          ${query ? 'No matching calls' : 'No call history recorded'}
+        </div>
+      `;
+      return;
+    }
+
+    el.historyMiniList.innerHTML = calls.slice(0, 30).map(call => {
+      const isOutbound = (call.direction || '').toLowerCase() === 'outbound';
+      const langName = call.language || call.metadata?.language || 'Hindi';
+      return `
+        <div class="history-mini-item" data-call-id="${escapeHtml(call.call_id)}">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+            <span class="history-mini-caller" title="${escapeHtml(call.caller_name)}">${escapeHtml(call.caller_name)}</span>
+            <span class="status-pill ${call.status}" style="font-size:9px; padding:1px 6px;">${call.status}</span>
+          </div>
+          <div class="history-mini-meta">
+            <span class="badge-direction ${isOutbound ? 'badge-outbound' : 'badge-inbound'}" style="font-size:8px; padding:1px 4px;">${isOutbound ? 'OUT' : 'IN'}</span>
+            <span class="history-id-cell" style="font-size:10px;">${escapeHtml(call.caller_id || '')}</span>
+            <span class="badge-lang-tag" style="font-size:8px; padding:1px 4px;">${escapeHtml(langName)}</span>
+            <span class="history-mini-time">${formatTimer(call.duration_seconds || 0)}</span>
+            <button class="history-mini-view" type="button" data-call-id="${escapeHtml(call.call_id)}">Inspect</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click events
+    el.historyMiniList.querySelectorAll('.history-mini-item').forEach(item => {
+      const callId = item.dataset.callId;
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.history-mini-view')) return;
+        const callObj = (state.historyCalls || []).find(c => c.call_id === callId);
+        if (callObj) {
+          state.sessions[callId] = callObj;
+          selectCall(callId);
+        }
+      });
+    });
+
+    el.historyMiniList.querySelectorAll('.history-mini-view').forEach(btn => {
+      const callId = btn.dataset.callId;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.inspectTranscript(callId);
+      });
+    });
   }
 
   // Global window function for drawer inspect
@@ -1277,6 +2065,144 @@
     }
     return state.audioCtx;
   }
+
+  // ── DTMF & Synthetic Tone Generation ──────────────────────────────────────
+  const DTMF_FREQS = {
+    '1': [697, 1209],
+    '2': [697, 1336],
+    '3': [697, 1477],
+    '4': [770, 1209],
+    '5': [770, 1336],
+    '6': [770, 1477],
+    '7': [852, 1209],
+    '8': [852, 1336],
+    '9': [852, 1477],
+    '*': [941, 1209],
+    '0': [941, 1336],
+    '#': [941, 1477],
+  };
+
+  function playDtmfTone(key, durationMs = 120) {
+    try {
+      const freqs = DTMF_FREQS[String(key)];
+      if (!freqs) return;
+      const ctx = getOrCreateAudioContext();
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc1.frequency.value = freqs[0];
+      osc2.type = 'sine';
+      osc2.frequency.value = freqs[1];
+
+      gainNode.gain.setValueAtTime(0.08, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationMs / 1000);
+
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      osc1.start();
+      osc2.start();
+      osc1.stop(ctx.currentTime + durationMs / 1000);
+      osc2.stop(ctx.currentTime + durationMs / 1000);
+    } catch (_) {
+      // Audio context might be waiting for user gesture
+    }
+  }
+
+  function playSyntheticToneFeedback() {
+    try {
+      const ctx = getOrCreateAudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (_) {}
+  }
+
+  // Helper: pick the best matching installed browser voice for a locale
+  function getVoiceForLocale(locale) {
+    if (!window.speechSynthesis) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || !voices.length) return null;
+    const lang = locale.split('-')[0];
+    // Priority: exact locale → language prefix → 'en-IN' → first available
+    return (
+      voices.find(v => v.lang === locale) ||
+      voices.find(v => v.lang.startsWith(lang)) ||
+      voices.find(v => v.lang === 'en-IN') ||
+      voices[0] ||
+      null
+    );
+  }
+
+  window.speakTurnText = function (turnId) {
+    const call = state.sessions[state.activeCallId];
+    if (!call) return;
+    const turn = call.transcript.find(t => t.id === turnId);
+    if (!turn || !turn.text) return;
+
+    const btn = document.getElementById(`btn-listen-${turnId}`);
+    if (btn) btn.classList.add('playing');
+
+    // Prefer real Gemini TTS when available
+    if (state.ttsEnabled) {
+      window.playTurnAudio(turnId).finally(() => {
+        if (btn) btn.classList.remove('playing');
+      });
+      return;
+    }
+
+    // Browser SpeechSynthesis fallback with best locale voice
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(turn.text);
+      const locale = turn.metadata?.language_locale || call.language_code || call.metadata?.language_locale || 'en-IN';
+      utterance.lang = locale;
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+
+      // Assign best available voice for the locale
+      const pickVoice = () => {
+        const best = getVoiceForLocale(locale);
+        if (best) utterance.voice = best;
+      };
+      if (window.speechSynthesis.getVoices().length) {
+        pickVoice();
+      } else {
+        window.speechSynthesis.onvoiceschanged = pickVoice;
+      }
+
+      triggerAudioActivity(3500);
+
+      utterance.onend = () => {
+        if (btn) btn.classList.remove('playing');
+        state.audioActive = false;
+      };
+      utterance.onerror = () => {
+        if (btn) btn.classList.remove('playing');
+        state.audioActive = false;
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      playSyntheticToneFeedback();
+      triggerAudioActivity(1500);
+      setTimeout(() => {
+        if (btn) btn.classList.remove('playing');
+        state.audioActive = false;
+      }, 1500);
+    }
+  };
 
   function stopCurrentAudio() {
     // 1. Cancel in-flight stream reader

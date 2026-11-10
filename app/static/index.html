@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LEO — Global Projects AI Voice Assistant Operations Dashboard</title>
+  <title>LEO — Multilingual AI Voice Assistant Demo Console</title>
   <meta name="description"
-    content="Production-oriented AI Call Center Operations Dashboard for LEO, Global Projects AI Voice Assistant.">
+    content="LEO Multilingual AI Voice Assistant Demo Console. Real-time Incoming & Outgoing Calls, Multilingual IVR, Live Call Monitoring and Human Handover Simulation.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -126,10 +126,10 @@
         </div>
       </div>
       <div class="incoming-info">
-        <span class="badge-incoming">INCOMING ENTERPRISE CALL</span>
+        <span class="badge-incoming">INCOMING DEMO CALL • EXTENSION 1001</span>
         <h2 id="modal-caller-name">Acme Corp - IT Director</h2>
-        <p id="modal-caller-phone" class="phone-masked">+1 (555) ***-8291</p>
-        <p id="modal-call-id" class="id-tag">CALL ID: CR-4821</p>
+        <p id="modal-caller-phone" class="phone-masked">+91 (982) ***-4829</p>
+        <p id="modal-call-id" class="id-tag">DEMO EXTENSION: 1001 • CALL ID: CR-4821</p>
         <div class="auto-answer-countdown">
           <span>Auto-answering in: <strong id="modal-countdown">3s</strong></span>
           <div class="countdown-bar">
@@ -151,7 +151,7 @@
               d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
             </path>
           </svg>
-          Answer Call
+          Answer Call (Ext 1001)
         </button>
       </div>
     </div>
@@ -184,8 +184,8 @@
           </svg>
         </div>
         <div>
-          <h1 class="header-title">LEO AI Call Center Operations</h1>
-          <p class="header-subtitle">Global Projects AI Voice Assistant • Production Gateway</p>
+          <h1 class="header-title">LEO Voice Console</h1>
+          <p class="header-subtitle">Multilingual AI Voice Assistant Demo • Demo Extension 1001</p>
         </div>
       </div>
 
@@ -194,9 +194,13 @@
           <span class="status-dot green"></span>
           <span>System: <strong id="health-label">Online</strong></span>
         </div>
+        <div class="status-indicator-pill" id="demo-mode-pill" title="Active demo mode extension">
+          <span class="status-dot blue"></span>
+          <span>Ext: <strong>1001 (Demo Mode)</strong></span>
+        </div>
         <div class="status-indicator-pill" id="telephony-status-pill" title="Hardware bridge status">
           <span class="status-dot amber"></span>
-          <span>Telephony: <strong id="telephony-label">REST Active (Audio Sim)</strong></span>
+          <span>Telephony: <strong id="telephony-label">Simulated Trunk</strong></span>
         </div>
         <div class="status-indicator-pill" id="concurrency-pill" title="Concurrency monitor">
           <span class="status-dot blue"></span>
@@ -218,7 +222,7 @@
                 d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
               </path>
             </svg>
-            Simulate Incoming Call
+            Simulate Incoming Call (1001)
           </button>
         </div>
       </div>
@@ -227,10 +231,8 @@
     <!-- Boundary Notification Banner -->
     <aside class="notice-banner" role="complementary">
       <div class="notice-content">
-        <span class="notice-tag">SYSTEM INTEGRATION BOUNDARY</span>
-        <span class="notice-text">LEO AI Brain connects directly to live Global Projects RAG backend (<code
-            id="provider-name">REST /api/v1/chat</code>). Real-time telephony trunk and PSTN transfers are simulated in
-          this interface. Credentials are never exposed to browser.</span>
+        <span class="notice-tag">DEMO / SIMULATED ENVIRONMENT</span>
+        <span class="notice-text">Extension 1001 is an interactive demo identifier. All incoming calls, outgoing dialer operations, multilingual IVR menus, audio playback, and human handovers are simulated in this web console without external carrier charges or real PSTN calls.</span>
       </div>
       <div class="notice-live-status">
         <span id="sse-indicator" class="sse-pill connecting">SSE Connecting...</span>
@@ -268,29 +270,213 @@
 
     <!-- Main Workspace Grid -->
     <main class="workspace-grid">
-      <!-- Left Column: Active Call Sessions (25 Concurrency Manager) -->
+      <!-- ═══════════════════════════════════════════════════════════════════
+           LEFT COLUMN — Call Manager (Incoming | Outgoing | History Tabs)
+           ═══════════════════════════════════════════════════════════════════ -->
       <section class="panel session-queue-panel" aria-labelledby="queue-heading">
         <div class="panel-header">
           <div class="header-left">
-            <h2 id="queue-heading" class="panel-title">Active Calls</h2>
+            <h2 id="queue-heading" class="panel-title">Call Manager</h2>
             <span class="count-badge" id="queue-count-badge">0</span>
           </div>
-          <span class="helper-tag">25 MAX</span>
+          <span class="badge-ext-1001">EXT 1001</span>
         </div>
-        <div id="session-list" class="session-list" role="tablist" aria-label="Active Call Sessions">
-          <div class="empty-state" id="empty-queue-state">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path
-                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
-              </path>
-            </svg>
-            <p>No active calls currently</p>
-            <small>Click <strong>Simulate Incoming Call</strong> above to initiate a realistic call session.</small>
+
+        <!-- 3-Tab Bar: Incoming | Outgoing | History -->
+        <div style="padding: 10px 14px 0;">
+          <div class="panel-tab-bar" role="tablist">
+            <button id="tab-incoming-btn" class="tab-btn active" type="button" role="tab" aria-selected="true">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              Incoming
+            </button>
+            <button id="tab-dialer-btn" class="tab-btn" type="button" role="tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              Outgoing
+            </button>
+            <button id="tab-history-btn" class="tab-btn" type="button" role="tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              History
+            </button>
           </div>
         </div>
+
+        <!-- Scrollable left panel body -->
+        <div class="left-panel-scroll">
+
+          <!-- ── TAB 1: Incoming Call Simulation ─────────────────────────── -->
+          <div id="incoming-tab-content">
+
+            <!-- Simulator form -->
+            <div class="incoming-sim-box">
+              <div class="sim-field-group">
+                <label for="input-incoming-caller-name" class="sim-field-label">Caller Name</label>
+                <input type="text" id="input-incoming-caller-name" class="sim-field-input" value="Acme Corp - IT Director">
+              </div>
+              <div class="sim-field-group">
+                <label for="input-incoming-caller-phone" class="sim-field-label">Customer Phone</label>
+                <input type="text" id="input-incoming-caller-phone" class="sim-field-input" value="+91 98201 44829">
+              </div>
+              <div class="sim-field-group">
+                <label for="incoming-delay-select" class="sim-field-label">Auto-Answer Mode</label>
+                <select id="incoming-delay-select" class="sim-field-input">
+                  <option value="3">Auto-Answer (3s Ring)</option>
+                  <option value="5">Auto-Answer (5s Ring)</option>
+                  <option value="0">Manual Answer</option>
+                </select>
+              </div>
+              <button id="btn-trigger-incoming" class="btn btn-primary" type="button" style="width:100%; justify-content:center; gap:8px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                Simulate Incoming (Ext 1001)
+              </button>
+            </div>
+
+            <!-- Active Inbound Call Card (shown when an incoming call is ringing or active) -->
+            <div id="incoming-active-card" class="incoming-active-card" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="badge-status-simulated" id="incoming-active-badge">INCOMING EXT 1001</span>
+                <span class="status-pill active" id="incoming-active-status">ACTIVE</span>
+              </div>
+              <div style="margin-top:4px;">
+                <div style="font-weight:700; font-size:13px; color:var(--text-primary);" id="incoming-active-caller">Acme Corp</div>
+                <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-secondary);" id="incoming-active-phone">+91 98201 44829</div>
+              </div>
+              <!-- Quick Call Controls inside Incoming tab -->
+              <div style="display:flex; gap:6px; margin-top:6px;" id="incoming-action-buttons">
+                <button id="btn-incoming-answer" class="btn btn-success btn-sm" type="button" style="flex:1; justify-content:center;">Answer (1001)</button>
+                <button id="btn-incoming-reject" class="btn btn-danger btn-sm" type="button" style="flex:1; justify-content:center;">Decline</button>
+              </div>
+            </div>
+
+            <!-- DTMF Keypad — shown only while active inbound call -->
+            <div id="incoming-keypad-box" class="incoming-keypad-section" style="display:none;">
+              <div class="incoming-keypad-header">
+                <span class="incoming-keypad-title">IVR Keypad — Active Call</span>
+                <span class="badge-status-simulated">LIVE DTMF</span>
+              </div>
+              <div class="dialer-keypad" id="incoming-dialer-keypad">
+                <button class="keypad-key" data-digit="1" type="button"><span class="key-digit">1</span><span class="key-letters">&nbsp;</span></button>
+                <button class="keypad-key" data-digit="2" type="button"><span class="key-digit">2</span><span class="key-letters">ABC</span></button>
+                <button class="keypad-key" data-digit="3" type="button"><span class="key-digit">3</span><span class="key-letters">DEF</span></button>
+                <button class="keypad-key" data-digit="4" type="button"><span class="key-digit">4</span><span class="key-letters">GHI</span></button>
+                <button class="keypad-key" data-digit="5" type="button"><span class="key-digit">5</span><span class="key-letters">JKL</span></button>
+                <button class="keypad-key" data-digit="6" type="button"><span class="key-digit">6</span><span class="key-letters">MNO</span></button>
+                <button class="keypad-key" data-digit="7" type="button"><span class="key-digit">7</span><span class="key-letters">PQRS</span></button>
+                <button class="keypad-key" data-digit="8" type="button"><span class="key-digit">8</span><span class="key-letters">TUV</span></button>
+                <button class="keypad-key" data-digit="9" type="button"><span class="key-digit">9</span><span class="key-letters">WXYZ</span></button>
+                <button class="keypad-key" data-digit="*" type="button"><span class="key-digit">*</span><span class="key-letters">&nbsp;</span></button>
+                <button class="keypad-key" data-digit="0" type="button"><span class="key-digit">0</span><span class="key-letters">+</span></button>
+                <button class="keypad-key" data-digit="#" type="button"><span class="key-digit">#</span><span class="key-letters">&nbsp;</span></button>
+              </div>
+            </div>
+
+            <!-- Live Sessions Queue -->
+            <div>
+              <div class="left-section-label" style="margin-bottom: 8px;">
+                Live Queue
+                <span class="helper-tag">25 MAX</span>
+              </div>
+              <div id="session-list" class="session-list" role="tablist" aria-label="Active Call Sessions">
+                <div class="empty-state" id="empty-queue-state">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                  <p>No active calls</p>
+                  <small>Simulate a call to <strong>Ext 1001</strong> above.</small>
+                </div>
+              </div>
+            </div>
+          </div><!-- /incoming-tab-content -->
+
+          <!-- ── TAB 2: Outgoing Call Demo Dialer ───────────────────────── -->
+          <div id="dialer-tab-content" class="dialer-container hidden">
+            <!-- LCD Screen -->
+            <div class="dialer-screen">
+              <div class="dialer-screen-top">
+                <span>CALLER ID: EXT 1001</span>
+                <span id="dialer-status" class="dialer-status-badge dialer-status-ready">Ready</span>
+              </div>
+              <div class="dialer-digits-row">
+                <div id="dialer-digits" class="dialer-digits" title="Entered Customer Phone">+91 98201 44829</div>
+                <button id="btn-dialer-backspace" class="dialer-backspace-btn" type="button" title="Backspace">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+                </button>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:2px;">
+                <label for="dialer-lang-select" style="font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Language:</label>
+                <select id="dialer-lang-select" class="select-input" style="padding:2px 6px; font-size:11px; background:rgba(19,34,56,0.9); border:1px solid rgba(255,255,255,0.15); color:#f8fafc; border-radius:4px;">
+                  <option value="auto">🌐 Auto-detect</option>
+                  <option value="Hindi">🇮🇳 Hindi (हिन्दी)</option>
+                  <option value="English">🇮🇳 English (India)</option>
+                  <option value="Tamil">🇮🇳 Tamil (தமிழ்)</option>
+                  <option value="Telugu">🇮🇳 Telugu (తెలుగు)</option>
+                  <option value="Kannada">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+                  <option value="Malayalam">🇮🇳 Malayalam (മലയാളം)</option>
+                  <option value="Tulu">🇮🇳 Tulu (ತುಳು)</option>
+                  <option value="Konkani">🇮🇳 Konkani (कोंकणी)</option>
+                  <option value="Urdu">🇮🇳 Urdu (اردو)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Numeric Keypad -->
+            <div class="dialer-keypad" id="dialer-keypad">
+              <button class="keypad-key" data-digit="1" type="button"><span class="key-digit">1</span><span class="key-letters">&nbsp;</span></button>
+              <button class="keypad-key" data-digit="2" type="button"><span class="key-digit">2</span><span class="key-letters">ABC</span></button>
+              <button class="keypad-key" data-digit="3" type="button"><span class="key-digit">3</span><span class="key-letters">DEF</span></button>
+              <button class="keypad-key" data-digit="4" type="button"><span class="key-digit">4</span><span class="key-letters">GHI</span></button>
+              <button class="keypad-key" data-digit="5" type="button"><span class="key-digit">5</span><span class="key-letters">JKL</span></button>
+              <button class="keypad-key" data-digit="6" type="button"><span class="key-digit">6</span><span class="key-letters">MNO</span></button>
+              <button class="keypad-key" data-digit="7" type="button"><span class="key-digit">7</span><span class="key-letters">PQRS</span></button>
+              <button class="keypad-key" data-digit="8" type="button"><span class="key-digit">8</span><span class="key-letters">TUV</span></button>
+              <button class="keypad-key" data-digit="9" type="button"><span class="key-digit">9</span><span class="key-letters">WXYZ</span></button>
+              <button class="keypad-key" data-digit="*" type="button"><span class="key-digit">*</span><span class="key-letters">CLR</span></button>
+              <button class="keypad-key" data-digit="0" type="button"><span class="key-digit">0</span><span class="key-letters">+</span></button>
+              <button class="keypad-key" data-digit="#" type="button"><span class="key-digit">#</span><span class="key-letters">&nbsp;</span></button>
+            </div>
+
+            <!-- Dialer Actions -->
+            <div class="dialer-actions-row">
+              <button id="btn-dialer-call" class="btn-dialer-call" type="button">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                Place Call
+              </button>
+              <button id="btn-dialer-end" class="btn-dialer-end" type="button" disabled>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path></svg>
+                End
+              </button>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="dialer-presets-row">
+              <span style="font-size:9px; color:var(--text-muted); font-weight:700;">PRESETS:</span>
+              <button class="preset-chip" data-phone="+91 98201 44829" type="button">Acme (+91 98201)</button>
+              <button class="preset-chip" data-phone="+91 94481 29304" type="button">Tata (+91 94481)</button>
+              <button class="preset-chip" data-phone="+91 99876 54321" type="button">Fintech (+91 99876)</button>
+            </div>
+          </div><!-- /dialer-tab-content -->
+
+          <!-- ── TAB 3: Call History (compact in-panel list) ────────────── -->
+          <div id="history-tab-content" class="hidden">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+              <span class="left-section-label">Recent Calls</span>
+              <button id="btn-refresh-history-left" class="btn btn-secondary btn-sm" type="button">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                Refresh
+              </button>
+            </div>
+            <div class="sim-field-group" style="margin-bottom:10px;">
+              <input type="search" id="history-search-left" class="sim-field-input" placeholder="Search caller, ID, phone...">
+            </div>
+            <div id="history-mini-list" class="history-tab-content">
+              <div style="text-align:center; padding:24px 0; color:var(--text-muted); font-size:12px;">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block; margin:0 auto 8px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                No history yet
+              </div>
+            </div>
+          </div><!-- /history-tab-content -->
+
+        </div><!-- /left-panel-scroll -->
       </section>
 
-      <!-- Center Column: Live Call Monitor & Conversation Stream -->
+            <!-- Center Column: Live Call Monitor & Conversation Stream -->
       <section class="panel monitor-panel" aria-labelledby="monitor-heading">
         <div class="panel-header live-banner-header">
           <div class="active-caller-summary">
@@ -300,12 +486,15 @@
             <div>
               <div class="caller-headline">
                 <h2 id="monitor-heading" class="caller-name">No Call Selected</h2>
+                <span id="monitor-ext-tag" class="badge-ext-1001">EXT 1001</span>
+                <span id="monitor-direction-tag" class="badge-inbound">INCOMING</span>
+                <span id="monitor-lang-tag" class="badge-lang-tag">🌐 Auto</span>
                 <span id="monitor-status-pill" class="status-pill idle">IDLE</span>
                 <span id="monitor-escalation-pill" class="status-pill warning hidden">ESCALATED</span>
               </div>
               <div class="caller-details">
                 <span id="monitor-caller-id">ID: --</span> •
-                <span id="monitor-caller-phone">+1 (***) ***-****</span> •
+                <span id="monitor-caller-phone">+91 (***) ***-****</span> •
                 <span id="monitor-timer">00:00</span>
               </div>
             </div>
@@ -322,7 +511,7 @@
               <span id="mute-label">Mute</span>
             </button>
             <button id="btn-escalate-quick" class="btn btn-warning btn-sm" disabled
-              title="Escalate to Human Specialist">
+              title="Escalate / Transfer to Human Specialist">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="16 3 21 3 21 8"></polyline>
                 <line x1="4" y1="20" x2="21" y2="3"></line>
@@ -330,7 +519,11 @@
                 <line x1="15" y1="15" x2="21" y2="21"></line>
                 <line x1="4" y1="4" x2="9" y2="9"></line>
               </svg>
-              Escalate
+              Transfer
+            </button>
+            <button id="btn-clear-chat" class="btn-clear-chat" disabled title="Clear conversation transcript">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Clear
             </button>
             <button id="btn-hangup" class="btn btn-danger btn-sm" disabled title="Terminate Call Session">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -341,6 +534,140 @@
               </svg>
               End Call
             </button>
+          </div>
+        </div>
+
+        <!-- Interactive IVR Multilingual Language Menu Panel -->
+        <div id="ivr-panel" class="ivr-panel hidden" role="region" aria-label="Multilingual IVR Language Selection">
+          <div class="ivr-header-row">
+            <div class="ivr-title-group">
+              <span class="badge-ext-1001">EXT 1001</span>
+              <span class="ivr-title">LEO Multilingual IVR Menu</span>
+            </div>
+            <span class="badge-status-simulated">INTERACTIVE KEYPAD</span>
+          </div>
+
+          <!-- Real-Time DTMF Digit Feedback Screen -->
+          <div class="ivr-dtmf-screen" id="ivr-dtmf-screen">
+            <div class="ivr-dtmf-screen-left">
+              <span class="ivr-dtmf-label">LAST PRESSED KEY:</span>
+              <span class="ivr-dtmf-digit" id="ivr-last-digit">—</span>
+            </div>
+            <div class="ivr-dtmf-status-text" id="ivr-dtmf-status-text">
+              Awaiting DTMF Keypad Selection (Press 1, 2, or 3)...
+            </div>
+          </div>
+
+          <!-- English Welcome Greeting Quote -->
+          <div class="ivr-greeting-box" id="ivr-greeting-box">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+            </svg>
+            <span id="ivr-greeting-quote">"Hello! Welcome to LEO, your AI voice assistant. For English press 1, for Hindi press 2, for other Indian languages press 3."</span>
+          </div>
+
+          <!-- First-Level Keypad Menu Grid (1-3) -->
+          <div class="ivr-grid" id="ivr-first-level-grid">
+            <button class="ivr-lang-btn" data-digit="1" data-key="1" data-code="en-IN" data-name="English" type="button">
+              <div class="ivr-key-pill">1</div>
+              <div class="ivr-lang-details">
+                <span class="ivr-lang-native">English</span>
+                <span class="ivr-lang-name">English (en-IN)</span>
+              </div>
+            </button>
+            <button class="ivr-lang-btn" data-digit="2" data-key="2" data-code="hi-IN" data-name="Hindi" type="button">
+              <div class="ivr-key-pill">2</div>
+              <div class="ivr-lang-details">
+                <span class="ivr-lang-native">हिन्दी</span>
+                <span class="ivr-lang-name">Hindi (hi-IN)</span>
+              </div>
+            </button>
+            <button class="ivr-lang-btn" id="btn-ivr-more" data-digit="3" data-key="3" type="button" style="border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.06);">
+              <div class="ivr-key-pill" style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.5);">3</div>
+              <div class="ivr-lang-details">
+                <span class="ivr-lang-native" style="color:#fbbf24;">Other Indian Languages</span>
+                <span class="ivr-lang-name">Tamil, Telugu, Kannada &amp; more...</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Expandable More Languages Submenu (Level 2: 1-7) -->
+          <div id="ivr-more-languages" class="ivr-more-languages hidden">
+            <div class="ivr-more-title">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              <span>Regional Languages Submenu (Press Keypad 1–7):</span>
+            </div>
+            <div class="ivr-grid">
+              <button class="ivr-lang-btn" data-digit="1" data-key="1" data-code="ta-IN" data-name="Tamil" type="button">
+                <div class="ivr-key-pill">1</div>
+                <div class="ivr-lang-details">
+                  <span class="ivr-lang-native">தமிழ்</span>
+                  <span class="ivr-lang-name">Tamil (ta-IN)</span>
+                </div>
+              </button>
+              <button class="ivr-lang-btn" data-digit="2" data-key="2" data-code="te-IN" data-name="Telugu" type="button">
+                <div class="ivr-key-pill">2</div>
+                <div class="ivr-lang-details">
+                  <span class="ivr-lang-native">తెలుగు</span>
+                  <span class="ivr-lang-name">Telugu (te-IN)</span>
+                </div>
+              </button>
+              <button class="ivr-lang-btn" data-digit="3" data-key="3" data-code="kn-IN" data-name="Kannada" type="button">
+                <div class="ivr-key-pill">3</div>
+                <div class="ivr-lang-details">
+                  <span class="ivr-lang-native">ಕನ್ನಡ</span>
+                  <span class="ivr-lang-name">Kannada (kn-IN)</span>
+                </div>
+              </button>
+              <button class="ivr-lang-btn" data-digit="4" data-key="4" data-code="ml-IN" data-name="Malayalam" type="button">
+                <div class="ivr-key-pill">4</div>
+                <div class="ivr-lang-details">
+                  <span class="ivr-lang-native">മലയാളം</span>
+                  <span class="ivr-lang-name">Malayalam (ml-IN)</span>
+                </div>
+              </button>
+              <button class="ivr-lang-btn" data-digit="5" data-key="5" data-code="tcy-IN" data-name="Tulu" type="button">
+                <div class="ivr-key-pill">5</div>
+                <div class="ivr-lang-details">
+                  <span class="ivr-lang-native">ತುಳು</span>
+                  <span class="ivr-lang-name">Tulu (tcy-IN)</span>
+                </div>
+              </button>
+              <button class="ivr-lang-btn" data-digit="6" data-key="6" data-code="kok-IN" data-name="Konkani" type="button">
+                <div class="ivr-key-pill">6</div>
+                <div class="ivr-lang-details">
+                  <span class="ivr-lang-native">कोंकणी</span>
+                  <span class="ivr-lang-name">Konkani (kok-IN)</span>
+                </div>
+              </button>
+              <button class="ivr-lang-btn" data-digit="7" data-key="7" data-code="ur-IN" data-name="Urdu" type="button">
+                <div class="ivr-key-pill">7</div>
+                <div class="ivr-lang-details">
+                  <span class="ivr-lang-native">اردو</span>
+                  <span class="ivr-lang-name">Urdu (ur-IN)</span>
+                </div>
+              </button>
+              <button class="ivr-lang-btn" data-digit="*" data-key="*" id="btn-ivr-back-main" type="button" style="border-color:rgba(148,163,184,0.3); background:rgba(148,163,184,0.06);">
+                <div class="ivr-key-pill" style="background:rgba(148,163,184,0.2); color:#cbd5e1;">*</div>
+                <div class="ivr-lang-details">
+                  <span class="ivr-lang-native" style="color:#cbd5e1;">Main Menu</span>
+                  <span class="ivr-lang-name">Press * to Go Back</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Searchable Language Selector Alternative -->
+          <div class="ivr-search-row">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="ivr-search-input" class="ivr-search-input" placeholder="Search language by name, script or code (e.g. Tamil, हिन्दी, ur-IN)...">
+          </div>
+
+          <div class="ivr-keypad-hint">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <span>Tip: Press number keys on your physical keyboard or click any keypad digit above to navigate instantly.</span>
           </div>
         </div>
 
@@ -428,7 +755,7 @@
 
         <!-- Active Call Escalation Details -->
         <div class="escalation-status-card" id="escalation-card">
-          <div class="card-title">CURRENT CALL CONTEXT</div>
+          <div class="card-title">HUMAN HANDOVER STATUS</div>
           <div id="escalation-empty-notice" class="empty-context">
             <p>Call currently handled by LEO AI. No escalation triggers active.</p>
           </div>
@@ -443,16 +770,64 @@
               <strong id="assigned-agent-name">None</strong>
             </div>
           </div>
+
+          <!-- Handover 4-Stage Stepper -->
+          <div class="handover-stepper" id="handover-stepper">
+            <div class="stepper-stage active" id="step-ai">
+              <span class="stepper-dot">1</span>
+              <span>LEO AI Assistant Handling</span>
+            </div>
+            <div class="stepper-stage" id="step-initiated">
+              <span class="stepper-dot">2</span>
+              <span>Handover Initiated</span>
+            </div>
+            <div class="stepper-stage" id="step-routing">
+              <span class="stepper-dot">3</span>
+              <span>Routing to Tier-2 Operator...</span>
+            </div>
+            <div class="stepper-stage" id="step-completed">
+              <span class="stepper-dot">4</span>
+              <span>Connected with Human Specialist</span>
+            </div>
+          </div>
+
+          <button id="btn-handover-trigger" class="btn btn-warning" type="button" style="width:100%; margin-top:10px; justify-content:center; gap:6px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+            Transfer to Human Agent
+          </button>
         </div>
 
         <!-- Human Agent Queue -->
         <div class="agent-queue-section">
           <div class="section-title-row">
-            <span class="section-title">OPERATOR POOL</span>
+            <span class="section-title">OPERATOR POOL (SIMULATED)</span>
             <span class="count-tag" id="agent-online-count">3 Online</span>
           </div>
           <div id="agent-list" class="agent-list">
             <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- AI Response & Grounding Monitor -->
+        <div class="escalation-status-card" style="margin-top:12px;">
+          <div class="card-title">AI RESPONSE MONITOR</div>
+          <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; padding:6px 0;">
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted)">LEO Brain:</span>
+              <span style="color:#38bdf8; font-weight:600;" id="ai-engine-status">Multi-turn Conversational RAG</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted)">Selected Language:</span>
+              <span style="color:#fbbf24; font-weight:600;" id="ai-monitor-lang">Auto-detect</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted)">Turn State:</span>
+              <span style="color:#34d399; font-weight:600;" id="ai-turn-state">Idle / Ready</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted)">Knowledge Grounding:</span>
+              <span style="color:#a78bfa; font-weight:600;" id="ai-grounding-status">Verified Knowledge Base</span>
+            </div>
           </div>
         </div>
 
@@ -462,8 +837,7 @@
             <line x1="12" y1="16" x2="12" y2="12"></line>
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
           </svg>
-          <small>Handoff transfers are simulated within dashboard state. Actual telephony SIP/PSTN transfers require
-            external telephony provider bridge confirmation.</small>
+          <small>Handoff transfers and agent queues are simulated within the demo dashboard. Extension 1001 is a virtual demo identifier.</small>
         </div>
       </section>
     </main>
@@ -473,7 +847,7 @@
       <div class="history-header">
         <div>
           <h2 id="history-heading" class="panel-title">Call History & Audit Log</h2>
-          <p class="panel-sub">Isolated demo session records with full transcript inspection</p>
+          <p class="panel-sub">Simulated demo session records with full transcript inspection</p>
         </div>
         <div class="history-search-bar">
           <label for="history-search" class="sr-only">Search Calls</label>
@@ -496,16 +870,18 @@
               <th scope="col">CALL ID</th>
               <th scope="col">CALLER</th>
               <th scope="col">PHONE (MASKED)</th>
+              <th scope="col">DIRECTION</th>
+              <th scope="col">EXT</th>
+              <th scope="col">LANGUAGE</th>
               <th scope="col">STATUS</th>
               <th scope="col">DURATION</th>
-              <th scope="col">ESCALATED</th>
               <th scope="col">STARTED</th>
               <th scope="col">ACTION</th>
             </tr>
           </thead>
           <tbody id="history-table-body">
             <tr>
-              <td colspan="8" class="text-center py-4">Loading call history...</td>
+              <td colspan="10" class="text-center py-4">Loading call history...</td>
             </tr>
           </tbody>
         </table>
