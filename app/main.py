@@ -7,6 +7,8 @@ Prometheus metrics, and versioned API routers.
 
 from __future__ import annotations
 
+import utils.transport
+import utils.session
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 

@@ -33,8 +33,11 @@ from app.schemas.demo import (
     CallActionRequest,
     CallMetrics,
     DemoCall,
+    DtmfInputRequest,
     EscalateCallRequest,
     HumanAgent,
+    LanguageOption,
+    SelectLanguageRequest,
     SendCustomerMessageRequest,
     SimulateCallRequest,
     SimulateOutboundCallRequest,
@@ -45,6 +48,17 @@ from app.services.demo_call_service import DemoCallService, get_demo_service
 
 router = APIRouter(prefix="/api/v1/demo", tags=["demo"])
 logger = get_logger(__name__)
+
+
+@router.get(
+    "/languages",
+    response_model=list[LanguageOption],
+    summary="Get supported multilingual IVR languages",
+    description="Returns verified and demo IVR language catalog with keypad mapping and native scripts.",
+)
+async def get_languages() -> list[LanguageOption]:
+    from app.services.demo_call_service import SUPPORTED_DEMO_LANGUAGES
+    return [LanguageOption(**lang) for lang in SUPPORTED_DEMO_LANGUAGES]
 
 
 @router.post(
@@ -64,6 +78,8 @@ async def simulate_call(
             caller_phone=body.caller_phone,
             auto_answer_delay_sec=body.auto_answer_delay_sec,
             initial_message=body.initial_message,
+            demo_extension=body.demo_extension,
+            language=body.language,
         )
         return call
     except ValueError as exc:
@@ -87,10 +103,67 @@ async def simulate_outbound_call(
             customer_phone=body.customer_phone,
             call_purpose=body.call_purpose,
             auto_answer_delay_sec=body.auto_answer_delay_sec,
+            demo_extension=body.demo_extension,
+            language=body.language,
         )
         return call
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc))
+
+
+@router.post(
+    "/calls/{call_id}/select-language",
+    response_model=DemoCall,
+    summary="Select IVR language for active call",
+    description="Registers customer keypad or manual selection of language and returns updated call state.",
+)
+async def select_call_language(
+    call_id: str,
+    body: SelectLanguageRequest,
+    demo_service: DemoCallService = Depends(get_demo_service),
+) -> DemoCall:
+    try:
+        return await demo_service.select_language(
+            call_id=call_id,
+            language_code=body.language_code,
+            language_name=body.language_name,
+            key=body.key,
+        )
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call {call_id} not found")
+
+
+@router.post(
+    "/calls/{call_id}/dtmf",
+    response_model=DemoCall,
+    summary="Process DTMF keypad digit for active call",
+    description="Processes DTMF digit (0-9, *, #) for IVR navigation or in-call DTMF signaling.",
+)
+async def process_call_dtmf(
+    call_id: str,
+    body: DtmfInputRequest,
+    demo_service: DemoCallService = Depends(get_demo_service),
+) -> DemoCall:
+    try:
+        return await demo_service.handle_dtmf(call_id=call_id, digit=body.digit)
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call {call_id} not found")
+
+
+@router.post(
+    "/calls/{call_id}/clear-transcript",
+    response_model=DemoCall,
+    summary="Clear conversation transcript",
+    description="Clears conversation transcript history for the specified call session.",
+)
+async def clear_call_transcript(
+    call_id: str,
+    demo_service: DemoCallService = Depends(get_demo_service),
+) -> DemoCall:
+    try:
+        return await demo_service.clear_transcript(call_id)
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Call {call_id} not found")
 
 
 @router.get(

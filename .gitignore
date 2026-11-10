@@ -12,8 +12,6 @@ venv/
 env/
 
 # Secrets � NEVER commit these
-.env
-.env.local
 .env.*.local
 *.pem
 *.key
@@ -32,7 +30,6 @@ coverage.xml
 .ruff_cache/
 
 # IDEs
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -64,3 +61,5 @@ knowledge_sources/*
 !knowledge_sources/.gitkeep
 !knowledge_sources/bitmax_group/.gitkeep
 
+config.bat
+node_modules
